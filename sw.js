@@ -2,7 +2,7 @@
  * 코드를 수정해서 다시 배포할 때는 CACHE_VERSION 숫자를 올려 주세요.
  * 그래야 사용자 폰에 저장된 옛날 캐시가 새 버전으로 교체됩니다.
  */
-const CACHE_VERSION = 'v14';
+const CACHE_VERSION = 'v15';
 const CACHE_NAME = `lucky-lotto-${CACHE_VERSION}`;
 
 const JSQR_URL = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
@@ -10,11 +10,6 @@ const JSQR_URL = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
 const APP_SHELL = [
   './',
   './index.html',
-  './manifest.json',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
-  './icons/icon-maskable-512.png',
-  './icons/apple-touch-icon.png',
   './icons/mascot.png',
   './sounds/first.mp3'
 ];
@@ -49,6 +44,11 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
 
   const url = new URL(req.url);
+
+  // 홈 화면 아이콘·매니페스트·파비콘은 서비스워커가 건드리지 않음
+  // (iOS/안드로이드가 아이콘을 직접 받아야 '행' 글자 아이콘이 안 생김)
+  if (url.origin === self.location.origin &&
+      (/\/icons\/lotto-/.test(url.pathname) || /\.webmanifest$/.test(url.pathname) || /favicon\.ico$/.test(url.pathname))) return;
 
   // QR 읽기 도구(jsQR): 한 번 받으면 오프라인에서도 쓰도록 저장
   if (url.href === JSQR_URL) {
