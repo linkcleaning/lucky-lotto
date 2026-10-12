@@ -1615,6 +1615,104 @@
 
       const STRENGTH = 5; // 내 숫자 가중치 (기본 1 대비 6배)
 
+      /* ---------- 추첨 효과음 (Web Audio로 직접 합성) ----------
+         드럼 회전: 낮은 모터·바람 소리 + 플라스틱 공끼리 부딪히는 '딸깍' 소리를 무작위로
+         공이 나올 때: 공 하나마다 '톡' 하고 떨어지는 소리 */
+      const sfx = (() => {
+        let ctx = null, noiseBuf = null;
+        function get() {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (!AC) return null;
+          if (!ctx) { try { ctx = new AC(); } catch (e) { return null; } }
+          if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+          return ctx;
+        }
+        function noise(c) {
+          if (noiseBuf) return noiseBuf;
+          const len = Math.floor(c.sampleRate * 2);
+          noiseBuf = c.createBuffer(1, len, c.sampleRate);
+          const d = noiseBuf.getChannelData(0);
+          for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+          return noiseBuf;
+        }
+        // 공끼리 부딪히는 짧고 단단한 소리
+        function clack(c, out, t, vol) {
+          const src = c.createBufferSource();
+          src.buffer = noise(c);
+          const bp = c.createBiquadFilter();
+          bp.type = 'bandpass';
+          bp.frequency.value = 1700 + Math.random() * 3600;
+          bp.Q.value = 6 + Math.random() * 12;
+          const g = c.createGain();
+          const len = 0.025 + Math.random() * 0.05;
+          g.gain.setValueAtTime(0.0001, t);
+          g.gain.exponentialRampToValueAtTime(vol, t + 0.0015);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+          src.connect(bp).connect(g).connect(out);
+          src.start(t, Math.random() * 1.8, len + 0.02);
+        }
+        // 드럼이 도는 동안의 소리
+        function tumble(seconds) {
+          const c = get();
+          if (!c) return;
+          const t0 = c.currentTime + 0.03, end = t0 + seconds;
+          const master = c.createGain();
+          master.gain.setValueAtTime(0.0001, t0);
+          master.gain.exponentialRampToValueAtTime(0.9, t0 + 0.12);
+          master.gain.setValueAtTime(0.9, Math.max(t0 + 0.13, end - 0.18));
+          master.gain.exponentialRampToValueAtTime(0.0001, end + 0.12);
+          master.connect(c.destination);
+
+          // 모터·바람: 낮게 걸러낸 잡음을 천천히 흔들기
+          const rum = c.createBufferSource();
+          rum.buffer = noise(c);
+          rum.loop = true;
+          const lp = c.createBiquadFilter();
+          lp.type = 'lowpass';
+          lp.frequency.value = 520;
+          const rg = c.createGain();
+          rg.gain.value = 0.07;
+          const lfo = c.createOscillator();
+          lfo.frequency.value = 2.6;
+          const lg = c.createGain();
+          lg.gain.value = 0.035;
+          lfo.connect(lg).connect(rg.gain);
+          rum.connect(lp).connect(rg).connect(master);
+          rum.start(t0);
+          rum.stop(end + 0.2);
+          lfo.start(t0);
+          lfo.stop(end + 0.2);
+
+          // 딸깍딸깍: 초당 약 60번, 가끔 여러 개가 연달아
+          let t = t0;
+          while (t < end) {
+            t += -Math.log(1 - Math.random()) / 60;
+            const burst = Math.random() < 0.28 ? 2 + Math.floor(Math.random() * 3) : 1;
+            for (let k = 0; k < burst; k++) clack(c, master, t + k * (0.008 + Math.random() * 0.01), 0.12 + Math.random() * 0.38);
+          }
+        }
+        // 공이 하나씩 나와서 자리 잡는 '톡'
+        function drop(atMs, i) {
+          const c = get();
+          if (!c) return;
+          const t = c.currentTime + atMs / 1000;
+          const o = c.createOscillator();
+          o.type = 'sine';
+          const f = 520 + (i % 6) * 70 + Math.random() * 40;
+          o.frequency.setValueAtTime(f * 1.6, t);
+          o.frequency.exponentialRampToValueAtTime(f, t + 0.05);
+          const g = c.createGain();
+          g.gain.setValueAtTime(0.0001, t);
+          g.gain.exponentialRampToValueAtTime(0.16, t + 0.004);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + 0.11);
+          o.connect(g).connect(c.destination);
+          o.start(t);
+          o.stop(t + 0.13);
+          clack(c, c.destination, t, 0.1);
+        }
+        return { get, tumble, drop };
+      })();
+
       function run(isRetry) {
         if (busy) return;
         busy = true;
@@ -1630,6 +1728,8 @@
         machineCard.hidden = false;
         machineCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
         if (navigator.vibrate) navigator.vibrate([20, 40, 20]);
+        const drumMs = reduceMotion ? 150 : (isRetry ? 1200 : 1800);
+        if (!reduceMotion) sfx.tumble(drumMs / 1000);   // 버튼을 누른 순간에 시작해야 아이폰에서도 소리가 남
 
         setTimeout(() => {
           machineCard.hidden = true;
@@ -1641,6 +1741,10 @@
           savedSel = '';
           $('resultRound').textContent = `${buyingRound()}회 대상`;
           renderGames(lastGames, mine, true);
+          if (!reduceMotion) {
+            // 공 애니메이션(0.7초)에서 공이 자리 잡는 시점에 맞춰 '톡'
+            lastGames.forEach((g, gi) => g.forEach((_, bi) => sfx.drop(gi * 120 + bi * 70 + 470, bi)));
+          }
           updateSaveBtn();
           resultsEl.hidden = false;
           resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1650,7 +1754,7 @@
           else if (isRetry) toast('새로운 5게임을 뽑았어요');
           busy = false;
           syncDock();
-        }, reduceMotion ? 150 : (isRetry ? 900 : 1400));
+        }, drumMs);
       }
 
       function resetAll() {
@@ -2339,7 +2443,8 @@
       let audioCtx = null;
       function fanfare() {
         try {
-          audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+          audioCtx = audioCtx || sfx.get();
+          if (!audioCtx) return;
           const now = audioCtx.currentTime;
           [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
             const o = audioCtx.createOscillator(), g = audioCtx.createGain();
