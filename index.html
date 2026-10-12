@@ -233,6 +233,39 @@
     textarea:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15); }
     textarea::placeholder { color: var(--mute); }
 
+    .num-add { display: flex; gap: 8px; }
+    .num-add input {
+      flex: 1;
+      width: 0;
+      min-width: 0;
+      height: 56px;
+      padding: 0 16px;
+      border-radius: var(--r-md);
+      border: 1px solid var(--line-soft);
+      background: var(--bg-2);
+      color: var(--ink);
+      font-family: var(--f-num);
+      font-weight: 700;
+      font-size: 20px;
+      letter-spacing: .04em;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .num-add input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15); }
+    .num-add input::placeholder { color: var(--mute); font-weight: 500; font-size: 16px; letter-spacing: 0; }
+    .num-add-btn {
+      flex: 0 0 auto;
+      min-width: 78px;
+      height: 56px;
+      padding: 0 16px;
+      font-size: 1.05rem;
+      color: #1b1406;
+      background: linear-gradient(180deg, var(--gold-l), var(--gold) 65%, #a87d1c);
+      box-shadow: 0 6px 16px -8px rgba(212, 175, 55, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    }
+    .parsed-title span { color: var(--mute); }
+    button.pchip { cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; gap: 6px; min-height: 34px; }
+    button.pchip .chip-x { color: var(--mute); font-size: .8rem; line-height: 1; }
     .parsed { margin-top: 16px; }
     .parsed-title { font-size: .82rem; color: var(--sub); margin-bottom: 8px; }
     .parsed-chips { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -1049,10 +1082,13 @@
         <h2>나만의 숫자</h2>
         <span class="meta" id="buyRoundMeta"></span>
       </div>
-      <p class="hint">가족 생일, 자동차 번호, 좋아하는 숫자를 <b>한 칸씩 띄워서</b> 적어주세요. 45보다 큰 숫자는 두 자리씩 나눠서 바꿔드려요.</p>
-      <textarea id="userInput" placeholder="예) 7 19850312 12가3456 0505" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" rows="3"></textarea>
+      <p class="hint">가족 생일, 차량번호, 좋아하는 숫자를 <b>하나씩</b> 쓰고 <b>넣기</b>를 누르세요. 키패드의 점(.)을 눌러도 바로 들어가요. 차량번호는 숫자만 적으면 돼요.</p>
+      <div class="num-add">
+        <input id="numInput" type="text" inputmode="decimal" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="예) 19850312" aria-label="숫자 입력" />
+        <button class="btn num-add-btn" id="numAdd" type="button">넣기</button>
+      </div>
       <div class="parsed" id="parsedBox" hidden>
-        <div class="parsed-title">인식된 숫자</div>
+        <div class="parsed-title">내 숫자 <span>· 누르면 빠져요</span></div>
         <div class="parsed-chips" id="parsedChips"></div>
       </div>
     </section>
@@ -1422,7 +1458,7 @@
       }
 
       /* ================= 번호 뽑기 화면 ================= */
-      const inputEl = $('userInput');
+      const numInput = $('numInput');
       const drawBtn = $('drawBtn');
       const resultsEl = $('results');
       const gameListEl = $('gameList');
@@ -1440,19 +1476,52 @@
         $('buyRoundMeta').textContent = `이번 주 ${r}회 · ${fmtDate(r, false)} 추첨`;
       }
 
-      function renderParsed(items) {
+      /* ---------- 나만의 숫자 (숫자 키패드로 하나씩 넣기) ---------- */
+      let myNums = [];
+      function loadNums() {
+        const raw = store.raw(KEY_INPUT);
+        myNums = raw ? raw.split(/[,，、\s]+/).map(t => t.replace(/[^0-9]/g, '')).filter(Boolean) : [];
+      }
+      function saveNums() {
+        if (myNums.length) store.setRaw(KEY_INPUT, myNums.join(' '));
+        else store.del(KEY_INPUT);
+      }
+      function renderNums() {
         const box = $('parsedBox'), chips = $('parsedChips');
         chips.innerHTML = '';
-        if (!items.length) { box.hidden = true; return; }
-        items.forEach(it => {
-          const span = document.createElement('span');
-          span.className = 'pchip' + (it.ok ? '' : ' bad');
-          if (!it.ok) span.textContent = `${it.raw} (${it.note})`;
-          else if (it.note === '분할') span.innerHTML = `${escapeHtml(it.raw)} → <b>${it.nums.join(', ')}</b>`;
-          else span.innerHTML = `<b>${it.nums[0]}</b>`;
-          chips.appendChild(span);
+        if (!myNums.length) { box.hidden = true; return; }
+        myNums.forEach((raw, i) => {
+          const it = parseInput(raw)[0];
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'pchip' + (it && it.ok ? '' : ' bad');
+          btn.setAttribute('aria-label', `${raw} 빼기`);
+          const label = !it || !it.ok ? `${escapeHtml(raw)}`
+            : it.note === '분할' ? `${escapeHtml(raw)} → <b>${it.nums.join(', ')}</b>`
+            : `<b>${it.nums[0]}</b>`;
+          btn.innerHTML = `${label}<span class="chip-x" aria-hidden="true">✕</span>`;
+          btn.addEventListener('click', () => {
+            myNums.splice(i, 1);
+            saveNums();
+            renderNums();
+          });
+          chips.appendChild(btn);
         });
         box.hidden = false;
+      }
+      // 입력칸의 숫자를 내 숫자에 넣기 (점·쉼표·띄어쓰기로 여러 개도 한 번에)
+      function addFromInput() {
+        const parts = numInput.value.split(/[^0-9]+/).filter(Boolean);
+        numInput.value = '';
+        let added = 0;
+        for (const p of parts) {
+          const it = parseInput(p)[0];
+          if (!it || !it.ok) { toast(`${p}은(는) 넣을 수 없어요`); continue; }
+          myNums.push(p);
+          added++;
+        }
+        if (added) { saveNums(); renderNums(); }
+        return added;
       }
 
       function renderGames(games, mine, animate) {
@@ -1550,12 +1619,11 @@
         if (busy) return;
         busy = true;
         syncDock();
-        inputEl.blur();
+        if (/\d/.test(numInput.value)) addFromInput();  // 넣기를 안 누른 숫자도 포함
+        numInput.blur();
 
-        const items = parseInput(inputEl.value);
-        renderParsed(items);
+        const items = parseInput(myNums.join(' '));
         const { weights, mine } = buildWeights(items, STRENGTH);
-        store.setRaw(KEY_INPUT, inputEl.value);
 
         resultsEl.hidden = true;
         fillDrum();
@@ -1586,8 +1654,10 @@
       }
 
       function resetAll() {
-        inputEl.value = '';
-        renderParsed([]);
+        numInput.value = '';
+        myNums = [];
+        saveNums();
+        renderNums();
         lastGames = [];
         selected = [];
         savedId = null;
@@ -1597,7 +1667,7 @@
         machineCard.hidden = true;
         store.del(KEY_INPUT);
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        setTimeout(() => inputEl.focus({ preventScroll: true }), 400);
+        setTimeout(() => numInput.focus({ preventScroll: true }), 400);
         syncDock();
         toast('처음부터 다시 시작해요');
       }
@@ -2236,8 +2306,25 @@
       drawBtn.addEventListener('click', () => run(lastGames.length > 0));
       $('retryBtn').addEventListener('click', () => run(true));
       $('clearBtn').addEventListener('click', resetAll);
-      inputEl.addEventListener('input', () => renderParsed(parseInput(inputEl.value)));
-      const TYPING_SEL = 'textarea, input[type="number"]';
+      $('numAdd').addEventListener('click', () => {
+        if (!/\d/.test(numInput.value)) { numInput.focus(); return; }
+        addFromInput();
+        numInput.focus();   // 키패드를 닫지 않고 다음 숫자를 바로 입력
+      });
+      numInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); if (/\d/.test(numInput.value)) addFromInput(); }
+      });
+      numInput.addEventListener('input', () => {
+        // 점(.)·쉼표·띄어쓰기를 누르면 그 앞의 숫자를 바로 넣고, 뒤에 이어 쓰던 숫자는 칸에 남김
+        const v = numInput.value;
+        if (!/[^0-9]/.test(v)) return;
+        const parts = v.split(/[^0-9]+/);
+        const rest = /[^0-9]$/.test(v) ? '' : parts.pop();
+        numInput.value = parts.filter(Boolean).join(' ');
+        addFromInput();
+        numInput.value = rest;
+      });
+      const TYPING_SEL = 'input[type="number"], #numInput';
       document.addEventListener('focusin', (e) => { if (e.target.matches(TYPING_SEL)) document.body.classList.add('typing'); });
       document.addEventListener('focusout', (e) => { if (e.target.matches(TYPING_SEL)) document.body.classList.remove('typing'); });
 
@@ -2308,8 +2395,8 @@
       if ('speechSynthesis' in window) speechSynthesis.getVoices();
 
       /* ================= 시작 ================= */
-      const saved = store.raw(KEY_INPUT);
-      if (saved) { inputEl.value = saved; renderParsed(parseInput(saved)); }
+      loadNums();
+      renderNums();
       updateBuyMeta();
       updateTabCount();
       mergeDraws();
