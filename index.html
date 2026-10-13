@@ -925,6 +925,51 @@
       border-color: transparent;
     }
 
+    /* 오늘의 로또운 */
+    .luck { --tier: var(--gold); }
+    .luck.t-best { --tier: #ffd86b; }
+    .luck.t-good { --tier: #7fd36b; }
+    .luck.t-mid  { --tier: #f0a640; }
+    .luck.t-bad  { --tier: #ff6b6b; }
+    .luck-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; margin-bottom: 12px; }
+    .luck-head .eyebrow { font-size: .66rem; letter-spacing: .3em; }
+    .luck-head h2 { margin: 2px 0 0; font-family: var(--f-display); font-weight: 800; font-size: 1.15rem; }
+    .luck-date { font-size: .78rem; color: var(--sub); white-space: nowrap; }
+    .cal-toggle { display: inline-grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; margin-bottom: 10px; border-radius: 999px; background: var(--bg-2); border: 1px solid var(--line-soft); }
+    .cal-toggle button { border: none; background: none; color: var(--sub); font-family: var(--f-display); font-weight: 700; font-size: .9rem; padding: 7px 18px; min-height: 36px; border-radius: 999px; cursor: pointer; }
+    .cal-toggle button[aria-checked="true"] { color: #1b1406; background: linear-gradient(180deg, var(--gold-l), var(--gold)); }
+    .luck-main { display: flex; align-items: center; gap: 16px; }
+    .gauge { position: relative; flex: 0 0 auto; width: 104px; height: 104px; }
+    .gauge svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+    .g-track { fill: none; stroke: rgba(255, 255, 255, 0.07); stroke-width: 10; }
+    .g-bar {
+      fill: none;
+      stroke: var(--tier);
+      stroke-width: 10;
+      stroke-linecap: round;
+      stroke-dasharray: 314.16;
+      stroke-dashoffset: 314.16;
+      filter: drop-shadow(0 0 6px var(--tier));
+      transition: stroke-dashoffset 1.1s cubic-bezier(.2, .8, .2, 1);
+    }
+    .g-num { position: absolute; inset: 0; display: grid; place-items: center; grid-auto-flow: column; align-content: center; justify-content: center; gap: 1px; }
+    .g-num b { font-family: var(--f-num); font-weight: 800; font-size: 1.9rem; color: var(--ink); font-variant-numeric: tabular-nums; }
+    .g-num span { font-family: var(--f-num); font-weight: 700; font-size: .9rem; color: var(--sub); align-self: end; padding-bottom: 7px; }
+    .luck-verdict { min-width: 0; }
+    .verdict { display: inline-block; font-family: var(--f-display); font-weight: 900; font-size: 1.12rem; color: var(--tier); }
+    .luck-verdict p { margin: 4px 0 0; font-size: .84rem; color: var(--sub); }
+    .luck-rows { display: grid; gap: 8px; margin-top: 14px; }
+    .lrow { display: flex; align-items: baseline; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--bg-2); border: 1px solid var(--line-soft); }
+    .lk { flex: 0 0 64px; font-size: .8rem; color: var(--sub); }
+    .lv { min-width: 0; font-family: var(--f-display); font-weight: 700; font-size: .95rem; color: var(--ink); }
+    .lv small { font-family: var(--f-body); font-weight: 400; color: var(--mute); font-size: .76rem; margin-left: 4px; }
+    .lrow.good .lv { color: var(--gold-l); }
+    .luck-rule { margin: 12px 0 0; font-size: .8rem; color: var(--sub); text-align: center; }
+    .luck-rule b { color: #ff8b8b; }
+    .luck-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 10px; font-size: .78rem; color: var(--mute); }
+    .link-btn { border: none; background: none; color: var(--gold); font-size: .8rem; padding: 6px 2px; min-height: 32px; cursor: pointer; }
+    .luck-note { margin: 10px 0 0; font-size: .72rem; color: var(--mute); text-align: center; }
+
     /* 가운데 원형 뽑기 버튼 (황금 동전) */
     .draw-zone { display: grid; place-items: center; padding: 6px 0 4px; }
     .draw-btn {
@@ -1041,6 +1086,9 @@
       .game .balls { gap: 3px; }
       .ball-row { gap: 6px; }
       .ball .star { width: 15px; height: 15px; font-size: 9px; }
+      .gauge { width: 88px; height: 88px; }
+      .g-num b { font-size: 1.55rem; }
+      .luck-main { gap: 12px; }
       .past-row .ball { width: 30px; height: 30px; font-size: .74rem; }
       .tab { font-size: .82rem; padding: 10px 4px; }
       .tab .count { min-width: 17px; height: 17px; font-size: .64rem; padding: 0 4px; margin-left: 2px; }
@@ -1070,6 +1118,55 @@
 
   <!-- ================= 번호 뽑기 ================= -->
   <main id="viewGen" role="tabpanel" aria-labelledby="tabGen">
+    <section class="panel luck" id="luckCard">
+      <div class="luck-head">
+        <div>
+          <div class="eyebrow">TODAY'S LUCK</div>
+          <h2>오늘의 로또운</h2>
+        </div>
+        <span class="luck-date" id="luckDate"></span>
+      </div>
+
+      <div id="luckSetup">
+        <p class="hint">생년월일을 넣으면 오늘 로또를 사도 좋은 날인지, 몇 시가 좋은지 알려드려요.</p>
+        <div class="cal-toggle" role="radiogroup" aria-label="양력 음력 선택">
+          <button type="button" role="radio" data-cal="solar" aria-checked="true">양력</button>
+          <button type="button" role="radio" data-cal="lunar" aria-checked="false">음력</button>
+        </div>
+        <div class="num-add">
+          <input id="birthInput" type="text" inputmode="numeric" maxlength="8" autocomplete="bday" placeholder="예) 19750312" aria-label="생년월일 8자리" />
+          <button class="btn num-add-btn" id="birthSave" type="button">보기</button>
+        </div>
+        <p class="err" id="birthErr"></p>
+      </div>
+
+      <div id="luckResult" hidden>
+        <div class="luck-main">
+          <div class="gauge" id="luckGauge">
+            <svg viewBox="0 0 120 120" aria-hidden="true">
+              <circle cx="60" cy="60" r="50" class="g-track" />
+              <circle cx="60" cy="60" r="50" class="g-bar" id="luckBar" />
+            </svg>
+            <div class="g-num"><b id="luckPct">0</b><span>%</span></div>
+          </div>
+          <div class="luck-verdict">
+            <span class="verdict" id="luckVerdict"></span>
+            <p id="luckMsg"></p>
+          </div>
+        </div>
+        <div class="luck-rows">
+          <div class="lrow"><span class="lk">좋은 시간</span><span class="lv" id="luckBest"></span></div>
+          <div class="lrow"><span class="lk">피할 시간</span><span class="lv" id="luckBad"></span></div>
+        </div>
+        <p class="luck-rule"><b>40% 미만</b>인 날은 구매하지 마세요</p>
+        <div class="luck-foot">
+          <span id="luckWho"></span>
+          <button type="button" class="link-btn" id="birthEdit">생일 바꾸기</button>
+        </div>
+      </div>
+      <p class="luck-note">재미로 보는 운세예요. 실제 당첨 확률은 어느 날이든 같아요.</p>
+    </section>
+
     <section class="panel final" id="finalCard" hidden>
       <div class="eyebrow">FINAL NUMBERS</div>
       <div class="when" id="finalWhen"></div>
@@ -2428,7 +2525,177 @@
         addFromInput();
         numInput.value = rest;
       });
-      const TYPING_SEL = 'input[type="number"], #numInput';
+      /* ================= 오늘의 로또운 =================
+         태어난 해의 띠(년주)와 오늘 일진(60갑자)의 궁합으로 점수를 냅니다.
+         · 띠 궁합: 육합·삼합은 +, 충·원진은 −
+         · 오행: 오늘 기운이 나를 돕거나(상생), 내가 다스리는 기운(재물)이면 +
+         · 좋은 시간: 판매 시간(06~24시, 토요일 20시 마감) 중 내 띠와 합이 드는 시진 */
+      const KEY_BIRTH = 'lucky-lotto-birth-v1';
+      const STEMS = '갑을병정무기경신임계', BRANCHES = '자축인묘진사오미신유술해';
+      const ANIMALS = ['쥐', '소', '호랑이', '토끼', '용', '뱀', '말', '양', '원숭이', '닭', '개', '돼지'];
+      const STEM_EL = [0, 0, 1, 1, 2, 2, 3, 3, 4, 4];           // 목 화 토 금 수
+      const YUKHAP = [1, 0, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2];    // 육합 짝
+      const WONJIN = [7, 6, 9, 8, 11, 10, 1, 0, 3, 2, 5, 4];    // 원진 짝
+      const samhap = (a, b) => a !== b && (a % 4) === (b % 4);  // 신자진·해묘미·인오술·사유축
+      const SIJIN = [[23, 1], [1, 3], [3, 5], [5, 7], [7, 9], [9, 11], [11, 13], [13, 15], [15, 17], [17, 19], [19, 21], [21, 23]];
+      let birthCal = 'solar';
+
+      function kstNow() { return new Date(Date.now() + 9 * 3600e3); }   // getUTC*로 한국 시각을 읽음
+      function jdn(y, m, d) {
+        const a = Math.floor((14 - m) / 12), Y = y + 4800 - a, M = m + 12 * a - 3;
+        return d + Math.floor((153 * M + 2) / 5) + 365 * Y + Math.floor(Y / 4) - Math.floor(Y / 100) + Math.floor(Y / 400) - 32045;
+      }
+      const dayPillar = (y, m, d) => (jdn(y, m, d) + 49) % 60;   // 0 = 갑자일 (2026-10-13 = 경신일 확인)
+      function branchRel(a, b) {
+        if (YUKHAP[a] === b) return 'hap';
+        if (samhap(a, b)) return 'samhap';
+        if (a === b) return 'same';
+        if ((a + 6) % 12 === b) return 'chung';
+        if (WONJIN[a] === b) return 'wonjin';
+        return '';
+      }
+      function hashInt(str) { let h = 2166136261; for (const ch of str) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+      function hourLabel(h) {
+        h = ((h % 24) + 24) % 24;
+        const ap = h < 12 ? '오전' : '오후';
+        const hh = h % 12 === 0 ? 12 : h % 12;
+        return h === 0 ? '밤 12시' : `${ap} ${hh}시`;
+      }
+
+      function birthInfo(b) {
+        const y = +b.ymd.slice(0, 4), m = +b.ymd.slice(4, 6), d = +b.ymd.slice(6, 8);
+        // 띠는 음력 해 기준. 양력 생일은 입춘(2월 4일) 전이면 전년도 띠로 계산
+        const ly = b.cal === 'lunar' ? y : ((m < 2 || (m === 2 && d < 4)) ? y - 1 : y);
+        const idx = ((ly - 4) % 60 + 60) % 60;
+        return { y, m, d, ly, stem: idx % 10, branch: idx % 12 };
+      }
+
+      function luckToday(b) {
+        const me = birthInfo(b);
+        const k = kstNow();
+        const ty = k.getUTCFullYear(), tm = k.getUTCMonth() + 1, td = k.getUTCDate();
+        const dp = dayPillar(ty, tm, td), ds = dp % 10, db = dp % 12;
+
+        let score = 52;
+        score += { hap: 22, samhap: 15, same: 6, chung: -26, wonjin: -14, '': 0 }[branchRel(me.branch, db)];
+        const mine = STEM_EL[me.stem], day = STEM_EL[ds];
+        if ((day + 1) % 5 === mine) score += 10;          // 오늘이 나를 도움 (상생)
+        else if ((mine + 2) % 5 === day) score += 14;     // 내가 다스리는 기운 = 재물
+        else if ((day + 2) % 5 === mine) score -= 12;     // 오늘이 나를 누름
+        else if (day === mine) score += 4;
+        score += (hashInt(`${b.ymd}|${b.cal}|${ty}${tm}${td}`) % 21) - 10;   // 생일·날짜별 변화
+        score = Math.max(8, Math.min(97, Math.round(score)));
+
+        // 시간 고르기: 판매 시간과 겹치는 시진만
+        const dow = k.getUTCDay();                  // 0 일 … 6 토
+        const closeH = dow === 6 ? 20 : 24, openH = 6;
+        const nowH = k.getUTCHours() + k.getUTCMinutes() / 60;
+        const scoreSijin = (i) => ({ hap: 3, samhap: 2, same: 1, chung: -3, wonjin: -2, '': 0 }[branchRel(me.branch, i)]) +
+          ({ hap: 1, samhap: 1, chung: -1, '': 0, same: 0, wonjin: 0 }[branchRel(db, i)]) + ((hashInt(b.ymd + i) % 10) / 100);
+        const slots = SIJIN.map(([a, z], i) => {
+          let s0 = a, e0 = z <= a ? z + 24 : z;
+          const s1 = Math.max(s0, openH), e1 = Math.min(e0, closeH);
+          return { i, start: s1, end: e1, open: e1 > s1, val: scoreSijin(i) };
+        }).filter(x => x.open);
+        const ranked = slots.slice().sort((p, q) => q.val - p.val);
+        const best = ranked[0];
+        const upcoming = ranked.find(x => x.val > 0 && x.end > nowH);
+        const worst = slots.slice().sort((p, q) => p.val - q.val)[0];
+        const closed = nowH >= closeH || nowH < openH;
+
+        return { score, me, dp, ds, db, best, upcoming, worst, nowH, closed, closeH, dow, date: { ty, tm, td } };
+      }
+
+      function renderLuck() {
+        const k = kstNow();
+        const ty = k.getUTCFullYear(), tm = k.getUTCMonth() + 1, td = k.getUTCDate();
+        const dp = dayPillar(ty, tm, td);
+        $('luckDate').textContent = `${tm}.${td} (${'일월화수목금토'[k.getUTCDay()]}) · ${STEMS[dp % 10]}${BRANCHES[dp % 12]}일`;
+
+        const b = store.get(KEY_BIRTH, null);
+        const card = $('luckCard');
+        if (!b || !/^\d{8}$/.test(b.ymd)) {
+          $('luckSetup').hidden = false;
+          $('luckResult').hidden = true;
+          card.className = 'panel luck';
+          return;
+        }
+        $('luckSetup').hidden = true;
+        $('luckResult').hidden = false;
+        const L = luckToday(b);
+        const tier = L.score >= 80 ? 'best' : L.score >= 60 ? 'good' : L.score >= 40 ? 'mid' : 'bad';
+        card.className = `panel luck t-${tier}`;
+        $('luckPct').textContent = L.score;
+        requestAnimationFrame(() => { $('luckBar').style.strokeDashoffset = String(314.16 * (1 - L.score / 100)); });
+
+        const VERDICT = {
+          best: ['오늘 꼭 사세요', '띠와 오늘 기운이 잘 맞는 날이에요. 좋은 시간에 맞춰 사보세요.'],
+          good: ['사도 좋아요', '무난하게 좋은 흐름이에요. 좋은 시간을 노려보세요.'],
+          mid:  ['가볍게 1~2게임만', '보통인 날이에요. 큰 기대 없이 소액만 즐기세요.'],
+          bad:  ['오늘은 구매하지 마세요', '기운이 엇갈리는 날이에요. 다음 좋은 날을 기다려요.']
+        };
+        $('luckVerdict').textContent = VERDICT[tier][0];
+        let msg = VERDICT[tier][1];
+        if (L.dow === 6 && L.nowH >= 20) msg = '이번 회차 판매는 마감됐어요 (토요일 오후 8시). 지금 사면 다음 회차예요.';
+        $('luckMsg').textContent = msg;
+
+        const fmtSlot = (x) => `${hourLabel(x.start)} ~ ${hourLabel(x.end)}<small>${BRANCHES[x.i]}시</small>`;
+        const bestRow = $('luckBest').parentElement;
+        if (tier === 'bad') {
+          $('luckBest').innerHTML = '오늘은 쉬어가요';
+          bestRow.classList.remove('good');
+        } else if (L.upcoming && L.upcoming.end > L.nowH && !L.closed) {
+          const isNow = L.upcoming.start <= L.nowH;
+          $('luckBest').innerHTML = fmtSlot(L.upcoming) + (isNow ? '<small>· 지금이에요!</small>' : '');
+          bestRow.classList.add('good');
+        } else {
+          $('luckBest').innerHTML = `${fmtSlot(L.best)}<small>· 오늘은 지났어요</small>`;
+          bestRow.classList.remove('good');
+        }
+        $('luckBad').innerHTML = L.worst && L.worst.val < 0 ? fmtSlot(L.worst) : '특별히 없어요';
+
+        $('luckWho').textContent = `${b.cal === 'lunar' ? '음력' : '양력'} ${b.ymd.slice(0, 4)}.${b.ymd.slice(4, 6)}.${b.ymd.slice(6, 8)} · ${ANIMALS[L.me.branch]}띠`;
+      }
+
+      document.querySelectorAll('.cal-toggle [data-cal]').forEach(btn => btn.addEventListener('click', () => {
+        birthCal = btn.dataset.cal;
+        document.querySelectorAll('.cal-toggle [data-cal]').forEach(x => x.setAttribute('aria-checked', String(x === btn)));
+      }));
+      function validBirth(ymd, cal) {
+        if (!/^\d{8}$/.test(ymd)) return '생년월일 8자리를 입력해 주세요 (예: 19750312)';
+        const y = +ymd.slice(0, 4), m = +ymd.slice(4, 6), d = +ymd.slice(6, 8);
+        const nowY = kstNow().getUTCFullYear();
+        if (y < 1900 || y > nowY) return '태어난 해를 다시 확인해 주세요';
+        if (m < 1 || m > 12) return '월은 01~12 사이로 입력해 주세요';
+        const maxD = cal === 'lunar' ? 30 : new Date(Date.UTC(y, m, 0)).getUTCDate();
+        if (d < 1 || d > maxD) return '날짜를 다시 확인해 주세요';
+        return '';
+      }
+      $('birthInput').addEventListener('input', (e) => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 8); $('birthErr').textContent = ''; });
+      $('birthInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); $('birthSave').click(); } });
+      $('birthSave').addEventListener('click', () => {
+        const ymd = $('birthInput').value.trim();
+        const err = validBirth(ymd, birthCal);
+        if (err) { $('birthErr').textContent = err; return; }
+        if (!store.set(KEY_BIRTH, { ymd, cal: birthCal })) { $('birthErr').textContent = '이 브라우저에서는 저장할 수 없어요'; return; }
+        $('birthInput').blur();
+        renderLuck();
+      });
+      $('birthEdit').addEventListener('click', () => {
+        const b = store.get(KEY_BIRTH, null);
+        if (b) {
+          $('birthInput').value = b.ymd;
+          birthCal = b.cal;
+          document.querySelectorAll('.cal-toggle [data-cal]').forEach(x => x.setAttribute('aria-checked', String(x.dataset.cal === b.cal)));
+        }
+        store.del(KEY_BIRTH);
+        $('luckBar').style.strokeDashoffset = '314.16';
+        renderLuck();
+        $('birthInput').focus();
+      });
+      setInterval(() => { if (document.visibilityState === 'visible' && !$('viewGen').hidden) renderLuck(); }, 60e3);
+
+      const TYPING_SEL = 'input[type="number"], #numInput, #birthInput';
       document.addEventListener('focusin', (e) => { if (e.target.matches(TYPING_SEL)) document.body.classList.add('typing'); });
       document.addEventListener('focusout', (e) => { if (e.target.matches(TYPING_SEL)) document.body.classList.remove('typing'); });
 
@@ -2503,13 +2770,14 @@
       loadNums();
       renderNums();
       updateBuyMeta();
+      renderLuck();
       updateTabCount();
       mergeDraws();
       renderFinal();
       if (location.hash === '#check') showTab('check'); else if (location.hash === '#past') showTab('past'); else syncDock();
       loadDraws();
       document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') { updateBuyMeta(); loadDraws(); }
+        if (document.visibilityState === 'visible') { updateBuyMeta(); renderLuck(); loadDraws(); }
       });
 
       if ('serviceWorker' in navigator && location.protocol !== 'file:') {
