@@ -1072,18 +1072,27 @@
     .draw-sub { font-family: var(--f-num); font-weight: 700; font-size: .7rem; opacity: .7; }
 
     .home-link {
+      position: sticky;
+      top: calc(10px + env(safe-area-inset-top));
+      z-index: 30;
       justify-self: start;
-      border: 1px solid var(--line-soft);
-      background: rgba(255, 255, 255, 0.04);
-      color: var(--ink);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: none;
       border-radius: 999px;
-      padding: 8px 14px 8px 10px;
-      min-height: 40px;
+      padding: 10px 18px 10px 14px;
+      min-height: 46px;
+      color: #1b1406;
+      background: linear-gradient(180deg, #fff3c4 0%, var(--gold-l) 25%, var(--gold) 70%, #a87d1c 100%);
+      box-shadow: 0 8px 20px -8px rgba(212, 175, 55, 0.8), 0 0 0 3px rgba(9, 11, 18, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.7);
       font-family: var(--f-display);
-      font-weight: 700;
-      font-size: .88rem;
+      font-weight: 900;
+      font-size: 1rem;
       cursor: pointer;
     }
+    .home-link svg { width: 20px; height: 20px; }
+    .home-link:active { transform: translateY(1px); }
 
     /* 맨 위로 버튼 (오른쪽 아래) */
     .to-top {
@@ -1202,55 +1211,6 @@
 
   <!-- ================= 번호 뽑기 ================= -->
   <main id="viewGen" role="tabpanel" aria-labelledby="tabGen">
-    <section class="panel luck" id="luckCard">
-      <div class="luck-head">
-        <div>
-          <div class="eyebrow">TODAY'S LUCK</div>
-          <h2>오늘의 로또운</h2>
-        </div>
-        <span class="luck-date" id="luckDate"></span>
-      </div>
-
-      <div id="luckSetup">
-        <p class="hint">생년월일을 넣으면 오늘 로또를 사도 좋은 날인지, 몇 시가 좋은지 알려드려요.</p>
-        <div class="cal-toggle" role="radiogroup" aria-label="양력 음력 선택">
-          <button type="button" role="radio" data-cal="solar" aria-checked="true">양력</button>
-          <button type="button" role="radio" data-cal="lunar" aria-checked="false">음력</button>
-        </div>
-        <div class="num-add">
-          <input id="birthInput" type="text" inputmode="numeric" maxlength="8" autocomplete="bday" placeholder="예) 19750312" aria-label="생년월일 8자리" />
-          <button class="btn num-add-btn" id="birthSave" type="button">보기</button>
-        </div>
-        <p class="err" id="birthErr"></p>
-      </div>
-
-      <div id="luckResult" hidden>
-        <div class="luck-main">
-          <div class="gauge" id="luckGauge">
-            <svg viewBox="0 0 120 120" aria-hidden="true">
-              <circle cx="60" cy="60" r="50" class="g-track" />
-              <circle cx="60" cy="60" r="50" class="g-bar" id="luckBar" />
-            </svg>
-            <div class="g-num"><b id="luckPct">0</b><span>%</span></div>
-          </div>
-          <div class="luck-verdict">
-            <span class="verdict" id="luckVerdict"></span>
-            <p id="luckMsg"></p>
-          </div>
-        </div>
-        <div class="luck-rows">
-          <div class="lrow"><span class="lk">좋은 시간</span><span class="lv" id="luckBest"></span></div>
-          <div class="lrow"><span class="lk">피할 시간</span><span class="lv" id="luckBad"></span></div>
-        </div>
-        <p class="luck-rule"><b>40% 미만</b>인 날은 구매하지 마세요</p>
-        <button type="button" class="week-cta" id="weekOpen">이번 주 요일별 로또운 보기 <span aria-hidden="true">›</span></button>
-        <div class="luck-foot">
-          <span id="luckWho"></span>
-          <button type="button" class="link-btn" id="birthEdit">생일 바꾸기</button>
-        </div>
-      </div>
-      <p class="luck-note">재미로 보는 운세예요. 실제 당첨 확률은 어느 날이든 같아요.</p>
-    </section>
 
     <section class="panel final" id="finalCard" hidden>
       <div class="eyebrow">FINAL NUMBERS</div>
@@ -1308,11 +1268,61 @@
         <button class="btn btn-ghost" id="clearBtn">처음부터</button>
       </div>
     </section>
+
+    <section class="panel luck" id="luckCard">
+      <div class="luck-head">
+        <div>
+          <div class="eyebrow">TODAY'S LUCK</div>
+          <h2>오늘의 로또운</h2>
+        </div>
+        <span class="luck-date" id="luckDate"></span>
+      </div>
+
+      <div id="luckSetup">
+        <p class="hint">생년월일을 넣으면 오늘 로또를 사도 좋은 날인지, 몇 시가 좋은지 알려드려요.</p>
+        <div class="cal-toggle" role="radiogroup" aria-label="양력 음력 선택">
+          <button type="button" role="radio" data-cal="solar" aria-checked="true">양력</button>
+          <button type="button" role="radio" data-cal="lunar" aria-checked="false">음력</button>
+        </div>
+        <div class="num-add">
+          <input id="birthInput" type="text" inputmode="numeric" maxlength="8" autocomplete="bday" placeholder="예) 19750312" aria-label="생년월일 8자리" />
+          <button class="btn num-add-btn" id="birthSave" type="button">보기</button>
+        </div>
+        <p class="err" id="birthErr"></p>
+      </div>
+
+      <div id="luckResult" hidden>
+        <div class="luck-main">
+          <div class="gauge" id="luckGauge">
+            <svg viewBox="0 0 120 120" aria-hidden="true">
+              <circle cx="60" cy="60" r="50" class="g-track" />
+              <circle cx="60" cy="60" r="50" class="g-bar" id="luckBar" />
+            </svg>
+            <div class="g-num"><b id="luckPct">0</b><span>%</span></div>
+          </div>
+          <div class="luck-verdict">
+            <span class="verdict" id="luckVerdict"></span>
+            <p id="luckMsg"></p>
+          </div>
+        </div>
+        <div class="luck-rows">
+          <div class="lrow"><span class="lk">좋은 시간</span><span class="lv" id="luckBest"></span></div>
+          <div class="lrow"><span class="lk">피할 시간</span><span class="lv" id="luckBad"></span></div>
+        </div>
+        <p class="luck-rule"><b>40% 미만</b>인 날은 구매하지 마세요</p>
+        <button type="button" class="week-cta" id="weekOpen">이번 주 요일별 로또운 보기 <span aria-hidden="true">›</span></button>
+        <div class="luck-foot">
+          <span id="luckWho"></span>
+          <button type="button" class="link-btn" id="birthEdit">생일 바꾸기</button>
+        </div>
+      </div>
+      <p class="luck-note">재미로 보는 운세예요. 실제 당첨 확률은 어느 날이든 같아요.</p>
+    </section>
   </main>
 
   <!-- ================= 당첨 확인 ================= -->
   <main id="viewCheck" role="tabpanel" aria-labelledby="tabCheck" hidden>
-    <button class="home-link" type="button" data-home>‹ 홈으로</button>
+    <button class="home-link" type="button" data-home><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11 12 4l8.5 7M6 9.5V20h4.5v-5.5h3V20H18V9.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>홈으로</button>
     <button class="qr-cta" id="qrCta" type="button">
       <svg viewBox="0 0 34 34" aria-hidden="true">
         <rect x="2" y="2" width="12" height="12" rx="2" fill="none" stroke="#d4af37" stroke-width="2.4"/>
@@ -1364,7 +1374,7 @@
   <!-- ================= 지난 당첨번호 ================= -->
   <!-- ================= 이번 주 로또운 ================= -->
   <main id="viewWeek" hidden>
-    <button class="home-link" type="button" data-home>‹ 홈으로</button>
+    <button class="home-link" type="button" data-home><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11 12 4l8.5 7M6 9.5V20h4.5v-5.5h3V20H18V9.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>홈으로</button>
     <section class="panel">
       <div style="text-align:center">
         <div class="eyebrow">THIS WEEK</div>
@@ -1379,7 +1389,7 @@
   </main>
 
   <main id="viewPast" role="tabpanel" aria-labelledby="tabPast" hidden>
-    <button class="home-link" type="button" data-home>‹ 홈으로</button>
+    <button class="home-link" type="button" data-home><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11 12 4l8.5 7M6 9.5V20h4.5v-5.5h3V20H18V9.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>홈으로</button>
     <section class="panel">
       <div style="text-align:center">
         <div class="eyebrow">WINNING NUMBERS</div>
@@ -1390,10 +1400,7 @@
     </section>
   </main>
 
-  <footer>
-    로또는 매 회차 독립 추첨이라 어떤 번호든 당첨 확률은 같아요. 내 숫자 가중치는 재미로 즐겨주세요.<br />
-    당첨번호는 동행복권 발표 기준이며, 최종 확인은 동행복권에서 해주세요.
-  </footer>
+  <footer>모든 번호의 당첨 확률은 같아요 · 재미로 즐겨주세요 🍀</footer>
 
   <div class="bubble" id="bubble">눌러봐요!</div>
   <button class="mascot" id="mascot" aria-label="마스코트 다람쥐 - 누르면 1등을 외쳐요">
