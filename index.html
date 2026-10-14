@@ -927,10 +927,10 @@
 
     /* 오늘의 로또운 */
     .luck { --tier: var(--gold); }
-    .luck.t-best { --tier: #ffd86b; }
-    .luck.t-good { --tier: #7fd36b; }
-    .luck.t-mid  { --tier: #f0a640; }
-    .luck.t-bad  { --tier: #ff6b6b; }
+    .t-best { --tier: #ffd86b; }
+    .t-good { --tier: #7fd36b; }
+    .t-mid  { --tier: #f0a640; }
+    .t-bad  { --tier: #ff6b6b; }
     .luck-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; margin-bottom: 12px; }
     .luck-head .eyebrow { font-size: .66rem; letter-spacing: .3em; }
     .luck-head h2 { margin: 2px 0 0; font-family: var(--f-display); font-weight: 800; font-size: 1.15rem; }
@@ -969,6 +969,61 @@
     .luck-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 10px; font-size: .78rem; color: var(--mute); }
     .link-btn { border: none; background: none; color: var(--gold); font-size: .8rem; padding: 6px 2px; min-height: 32px; cursor: pointer; }
     .luck-note { margin: 10px 0 0; font-size: .72rem; color: var(--mute); text-align: center; }
+
+    .week-cta {
+      display: block;
+      width: 100%;
+      margin-top: 12px;
+      padding: 12px;
+      min-height: 46px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(212, 175, 55, 0.07);
+      color: var(--gold-l);
+      font-family: var(--f-display);
+      font-weight: 700;
+      font-size: .92rem;
+      cursor: pointer;
+    }
+    .week-pick {
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: var(--r-md);
+      background: linear-gradient(135deg, rgba(212, 175, 55, 0.16), rgba(212, 175, 55, 0.04));
+      border: 1px solid var(--line);
+      text-align: center;
+    }
+    .week-pick .wp-label { font-size: .76rem; color: var(--sub); }
+    .week-pick .wp-day { margin: 4px 0 2px; font-family: var(--f-display); font-weight: 900; font-size: 1.25rem; color: var(--gold-l); }
+    .week-pick .wp-day b { font-family: var(--f-num); color: var(--tier, var(--gold-l)); }
+    .week-pick .wp-time { font-size: .88rem; color: var(--ink); }
+    .week-pick .wp-avoid { margin-top: 6px; font-size: .78rem; color: #ff9b9b; }
+    .week-list { display: grid; gap: 8px; margin-top: 14px; }
+    .wrow {
+      display: grid;
+      grid-template-columns: 46px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 12px;
+      border-radius: var(--r-md);
+      background: var(--bg-2);
+      border: 1px solid var(--line-soft);
+    }
+    .wrow.today { border-color: var(--tier); box-shadow: 0 0 0 1px var(--tier) inset, 0 0 18px -8px var(--tier); }
+    .wrow.past { opacity: .45; }
+    .wday { text-align: center; line-height: 1.15; }
+    .wday b { display: block; font-family: var(--f-display); font-weight: 900; font-size: 1.1rem; color: var(--ink); }
+    .wday span { font-family: var(--f-num); font-size: .7rem; color: var(--mute); }
+    .wday .tag { display: inline-block; margin-top: 3px; font-family: var(--f-display); font-weight: 800; font-size: .62rem; color: #1b1406; background: var(--tier); border-radius: 999px; padding: 1px 6px; }
+    .wbody { min-width: 0; }
+    .wbar { height: 7px; border-radius: 999px; background: rgba(255, 255, 255, 0.07); overflow: hidden; }
+    .wbar i { display: block; height: 100%; border-radius: inherit; background: var(--tier); box-shadow: 0 0 8px var(--tier); width: 0; transition: width .9s cubic-bezier(.2, .8, .2, 1); }
+    .wline { display: flex; flex-wrap: wrap; gap: 2px 8px; margin-top: 6px; font-size: .8rem; }
+    .wverdict { font-family: var(--f-display); font-weight: 800; color: var(--tier); }
+    .wtime { color: var(--sub); }
+    .wnow { width: 100%; font-size: .74rem; color: var(--gold); }
+    .wpct { font-family: var(--f-num); font-weight: 800; font-size: 1.35rem; color: var(--ink); font-variant-numeric: tabular-nums; }
+    .wpct small { font-size: .72rem; color: var(--sub); margin-left: 1px; }
 
     /* 가운데 원형 뽑기 버튼 (황금 동전) */
     .draw-zone { display: grid; place-items: center; padding: 6px 0 4px; }
@@ -1159,6 +1214,7 @@
           <div class="lrow"><span class="lk">피할 시간</span><span class="lv" id="luckBad"></span></div>
         </div>
         <p class="luck-rule"><b>40% 미만</b>인 날은 구매하지 마세요</p>
+        <button type="button" class="week-cta" id="weekOpen">이번 주 요일별 로또운 보기 <span aria-hidden="true">›</span></button>
         <div class="luck-foot">
           <span id="luckWho"></span>
           <button type="button" class="link-btn" id="birthEdit">생일 바꾸기</button>
@@ -1277,6 +1333,22 @@
   </main>
 
   <!-- ================= 지난 당첨번호 ================= -->
+  <!-- ================= 이번 주 로또운 ================= -->
+  <main id="viewWeek" hidden>
+    <button class="home-link" type="button" data-home>‹ 홈으로</button>
+    <section class="panel">
+      <div style="text-align:center">
+        <div class="eyebrow">THIS WEEK</div>
+        <h3 class="panel-title" style="margin-top:6px">이번 주 로또운</h3>
+        <p class="panel-sub" id="weekSub"></p>
+      </div>
+      <div class="week-pick" id="weekPick"></div>
+      <div class="week-list" id="weekList"></div>
+      <p class="luck-rule"><b>40% 미만</b>인 날은 구매하지 마세요</p>
+      <p class="luck-note">재미로 보는 운세예요. 실제 당첨 확률은 어느 날이든 같아요.</p>
+    </section>
+  </main>
+
   <main id="viewPast" role="tabpanel" aria-labelledby="tabPast" hidden>
     <button class="home-link" type="button" data-home>‹ 홈으로</button>
     <section class="panel">
@@ -1703,7 +1775,7 @@
       }
 
       function currentTab() {
-        return !$('viewCheck').hidden ? 'check' : !$('viewPast').hidden ? 'past' : 'gen';
+        return !$('viewCheck').hidden ? 'check' : !$('viewPast').hidden ? 'past' : !$('viewWeek').hidden ? 'week' : 'gen';
       }
       function syncDock() {
         drawBtn.disabled = busy;
@@ -2458,13 +2530,14 @@
 
       /* ================= 탭 ================= */
       function showTab(name) {
-        const views = { gen: 'viewGen', check: 'viewCheck', past: 'viewPast' };
+        const views = { gen: 'viewGen', check: 'viewCheck', past: 'viewPast', week: 'viewWeek' };
         const tabs = { gen: 'tabGen', check: 'tabCheck', past: 'tabPast' };
         if (!views[name]) name = 'gen';
         Object.keys(views).forEach(k => {
           $(views[k]).hidden = k !== name;
-          $(tabs[k]).setAttribute('aria-selected', String(k === name));
+          if (tabs[k]) $(tabs[k]).setAttribute('aria-selected', String(k === name));
         });
+        if (name === 'week') renderWeek();
         if (name !== 'check') clearInterval(cdTimer);
         if (name === 'check') renderCheck();
         if (name === 'past') renderPast();
@@ -2529,7 +2602,7 @@
          태어난 해의 띠(년주)와 오늘 일진(60갑자)의 궁합으로 점수를 냅니다.
          · 띠 궁합: 육합·삼합은 +, 충·원진은 −
          · 오행: 오늘 기운이 나를 돕거나(상생), 내가 다스리는 기운(재물)이면 +
-         · 좋은 시간: 판매 시간(06~24시, 토요일 20시 마감) 중 내 띠와 합이 드는 시진 */
+         · 좋은 시간: 아침 9시~저녁 9시(토요일은 8시 판매 마감까지) 중 내 띠와 합이 드는 시진 */
       const KEY_BIRTH = 'lucky-lotto-birth-v1';
       const STEMS = '갑을병정무기경신임계', BRANCHES = '자축인묘진사오미신유술해';
       const ANIMALS = ['쥐', '소', '호랑이', '토끼', '용', '뱀', '말', '양', '원숭이', '닭', '개', '돼지'];
@@ -2571,9 +2644,12 @@
       }
 
       function luckToday(b) {
-        const me = birthInfo(b);
         const k = kstNow();
-        const ty = k.getUTCFullYear(), tm = k.getUTCMonth() + 1, td = k.getUTCDate();
+        return luckFor(b, k.getUTCFullYear(), k.getUTCMonth() + 1, k.getUTCDate(), k.getUTCHours() + k.getUTCMinutes() / 60);
+      }
+      // 아무 날짜의 로또운 (nowHIn: 그날이 오늘이면 현재 시각, 아니면 null)
+      function luckFor(b, ty, tm, td, nowHIn) {
+        const me = birthInfo(b);
         const dp = dayPillar(ty, tm, td), ds = dp % 10, db = dp % 12;
 
         let score = 52;
@@ -2587,9 +2663,9 @@
         score = Math.max(8, Math.min(97, Math.round(score)));
 
         // 시간 고르기: 판매 시간과 겹치는 시진만
-        const dow = k.getUTCDay();                  // 0 일 … 6 토
-        const closeH = dow === 6 ? 20 : 24, openH = 6;
-        const nowH = k.getUTCHours() + k.getUTCMinutes() / 60;
+        const dow = new Date(Date.UTC(ty, tm - 1, td)).getUTCDay();   // 0 일 … 6 토
+        const closeH = dow === 6 ? 20 : 21, openH = 9;   // 추천 시간: 아침 9시 ~ 저녁 9시 (토요일은 판매 마감 8시까지)
+        const nowH = nowHIn == null ? 0 : nowHIn;
         const scoreSijin = (i) => ({ hap: 3, samhap: 2, same: 1, chung: -3, wonjin: -2, '': 0 }[branchRel(me.branch, i)]) +
           ({ hap: 1, samhap: 1, chung: -1, '': 0, same: 0, wonjin: 0 }[branchRel(db, i)]) + ((hashInt(b.ymd + i) % 10) / 100);
         const slots = SIJIN.map(([a, z], i) => {
@@ -2601,7 +2677,7 @@
         const best = ranked[0];
         const upcoming = ranked.find(x => x.val > 0 && x.end > nowH);
         const worst = slots.slice().sort((p, q) => p.val - q.val)[0];
-        const closed = nowH >= closeH || nowH < openH;
+        const closed = nowHIn != null && (nowH >= closeH || nowH < openH);
 
         return { score, me, dp, ds, db, best, upcoming, worst, nowH, closed, closeH, dow, date: { ty, tm, td } };
       }
@@ -2657,6 +2733,94 @@
         $('luckWho').textContent = `${b.cal === 'lunar' ? '음력' : '양력'} ${b.ymd.slice(0, 4)}.${b.ymd.slice(4, 6)}.${b.ymd.slice(6, 8)} · ${ANIMALS[L.me.branch]}띠`;
       }
 
+      const tierOf = (sc) => sc >= 80 ? 'best' : sc >= 60 ? 'good' : sc >= 40 ? 'mid' : 'bad';
+      const SHORT_VERDICT = { best: '꼭 사세요', good: '사도 좋아요', mid: '1~2게임만', bad: '사지 마세요' };
+      const DOW = '일월화수목금토';
+
+      // 이번 주 월~토 (일요일이면 다가오는 월~토)
+      function weekDays() {
+        const k = kstNow();
+        const base = Date.UTC(k.getUTCFullYear(), k.getUTCMonth(), k.getUTCDate());
+        const dow = k.getUTCDay();
+        const monOff = dow === 0 ? 1 : 1 - dow;
+        return Array.from({ length: 6 }, (_, i) => {
+          const off = monOff + i;
+          const t = new Date(base + off * 864e5);
+          return { y: t.getUTCFullYear(), m: t.getUTCMonth() + 1, d: t.getUTCDate(), dow: t.getUTCDay(), off };
+        });
+      }
+
+      function renderWeek() {
+        const b = store.get(KEY_BIRTH, null);
+        const list = $('weekList'), pick = $('weekPick');
+        list.innerHTML = '';
+        const r = buyingRound();
+        $('weekSub').textContent = `${r}회 · ${fmtDate(r)} 저녁 8시 판매 마감`;
+        if (!b || !/^\d{8}$/.test(b.ymd)) {
+          pick.className = 'week-pick';
+          pick.innerHTML = `<div class="wp-label">생년월일을 먼저 넣어주세요</div>
+            <button type="button" class="week-cta" data-home style="margin-top:10px">생년월일 넣으러 가기</button>`;
+          pick.querySelector('[data-home]').addEventListener('click', () => { showTab('gen'); $('birthInput').focus(); });
+          return;
+        }
+        const k = kstNow();
+        const nowH = k.getUTCHours() + k.getUTCMinutes() / 60;
+        const fmtSlot = (x) => x ? `${hourLabel(x.start)}~${hourLabel(x.end).replace(/^(오전|오후) /, '')}` : '';
+
+        const days = weekDays().map(dd => {
+          const isToday = dd.off === 0, isPast = dd.off < 0;
+          const L = luckFor(b, dd.y, dd.m, dd.d, isToday ? nowH : null);
+          const goodSlot = isToday ? (L.upcoming && !L.closed ? L.upcoming : null) : (L.best && L.best.val > 0 ? L.best : null);
+          return { ...dd, L, isToday, isPast, tier: tierOf(L.score), goodSlot };
+        });
+
+        days.forEach(x => {
+          const row = document.createElement('div');
+          row.className = `wrow t-${x.tier}${x.isToday ? ' today' : ''}${x.isPast ? ' past' : ''}`;
+          let timeTxt = '';
+          if (x.isPast) timeTxt = '지난 날';
+          else if (x.tier === 'bad') timeTxt = '쉬어가는 날';
+          else if (x.goodSlot) timeTxt = `좋은 시간 ${fmtSlot(x.goodSlot)}`;
+          else timeTxt = '좋은 시간 지남';
+          const nowLine = x.isToday
+            ? `<span class="wnow">지금 ${hourLabel(k.getUTCHours())} ${String(k.getUTCMinutes()).padStart(2, '0')}분${x.goodSlot && x.goodSlot.start <= nowH ? ' · 지금이 좋은 시간이에요!' : ''}</span>`
+            : '';
+          row.innerHTML = `
+            <div class="wday"><b>${DOW[x.dow]}</b><span>${x.m}.${x.d}</span>${x.isToday ? '<div class="tag">오늘</div>' : ''}</div>
+            <div class="wbody">
+              <div class="wbar"><i></i></div>
+              <div class="wline"><span class="wverdict">${SHORT_VERDICT[x.tier]}</span><span class="wtime">${timeTxt}</span>${nowLine}</div>
+            </div>
+            <div class="wpct">${x.L.score}<small>%</small></div>`;
+          list.appendChild(row);
+          requestAnimationFrame(() => { row.querySelector('.wbar i').style.width = x.L.score + '%'; });
+        });
+
+        // 남은 날 중 가장 좋은 날 추천
+        const remain = days.filter(x => !x.isPast && !(x.isToday && x.L.closed && x.dow === 6));
+        if (!remain.length) {
+          pick.className = 'week-pick';
+          pick.innerHTML = '<div class="wp-label">이번 회차 판매가 끝났어요</div><div class="wp-time">다음 주 로또운은 월요일에 새로 나와요</div>';
+          return;
+        }
+        const top = remain.slice().sort((p, q) => q.L.score - p.L.score || p.off - q.off)[0];
+        const low = remain.slice().sort((p, q) => p.L.score - q.L.score)[0];
+        pick.className = `week-pick t-${top.tier}`;
+        if (top.L.score < 40) {
+          pick.innerHTML = `<div class="wp-label">이번 주 추천</div>
+            <div class="wp-day">남은 날 모두 40% 미만</div>
+            <div class="wp-time">이번 주는 쉬고 다음 주를 노려보세요</div>`;
+          return;
+        }
+        const when = top.isToday ? '오늘' : `${DOW[top.dow]}요일(${top.m}.${top.d})`;
+        const slotTxt = top.goodSlot ? `${when} <b>${hourLabel(top.goodSlot.start)} ~ ${hourLabel(top.goodSlot.end)}</b>에 사세요` : `${when}에 사세요`;
+        pick.innerHTML = `<div class="wp-label">이번 주 가장 좋은 날</div>
+          <div class="wp-day">${when} <b>${top.L.score}%</b></div>
+          <div class="wp-time">${slotTxt}</div>
+          ${low.L.score < 40 && low !== top ? `<div class="wp-avoid">${low.isToday ? '오늘' : DOW[low.dow] + '요일'}은 ${low.L.score}%라 피하세요</div>` : ''}`;
+      }
+      $('weekOpen').addEventListener('click', () => showTab('week'));
+
       document.querySelectorAll('.cal-toggle [data-cal]').forEach(btn => btn.addEventListener('click', () => {
         birthCal = btn.dataset.cal;
         document.querySelectorAll('.cal-toggle [data-cal]').forEach(x => x.setAttribute('aria-checked', String(x === btn)));
@@ -2693,7 +2857,11 @@
         renderLuck();
         $('birthInput').focus();
       });
-      setInterval(() => { if (document.visibilityState === 'visible' && !$('viewGen').hidden) renderLuck(); }, 60e3);
+      setInterval(() => {
+        if (document.visibilityState !== 'visible') return;
+        if (!$('viewGen').hidden) renderLuck();
+        if (!$('viewWeek').hidden) renderWeek();
+      }, 60e3);
 
       const TYPING_SEL = 'input[type="number"], #numInput, #birthInput';
       document.addEventListener('focusin', (e) => { if (e.target.matches(TYPING_SEL)) document.body.classList.add('typing'); });
@@ -2774,7 +2942,7 @@
       updateTabCount();
       mergeDraws();
       renderFinal();
-      if (location.hash === '#check') showTab('check'); else if (location.hash === '#past') showTab('past'); else syncDock();
+      if (location.hash === '#check') showTab('check'); else if (location.hash === '#past') showTab('past'); else if (location.hash === '#week') showTab('week'); else syncDock();
       loadDraws();
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') { updateBuyMeta(); renderLuck(); loadDraws(); }
