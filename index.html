@@ -448,6 +448,77 @@
       border-radius: 0 0 14px 14px;
       background: linear-gradient(180deg, var(--gold), var(--gold-d));
     }
+    /* 슬롯머신 */
+    .slot {
+      --cell: 58px;
+      position: relative;
+      max-width: 360px;
+      margin: 0 auto;
+      padding: 10px 10px 8px;
+      border-radius: 22px;
+      background:
+        radial-gradient(120% 80% at 50% 0%, rgba(255, 90, 60, 0.25), transparent 60%),
+        linear-gradient(180deg, #4a0e12 0%, #2a0609 100%);
+      border: 3px solid #d18f00;
+      box-shadow: 0 0 0 2px #6e4100, 0 0 28px -4px rgba(240, 160, 0, 0.75), inset 0 2px 10px rgba(255, 200, 80, 0.25);
+    }
+    .bulbs { display: flex; justify-content: space-between; padding: 0 4px; }
+    .bulbs i { width: 7px; height: 7px; border-radius: 50%; background: #ffd75e; box-shadow: 0 0 6px #ffb800; animation: blink .9s steps(2, start) infinite; }
+    .bulbs i:nth-child(even) { animation-delay: .45s; }
+    @keyframes blink { 0% { opacity: 1; } 100% { opacity: .25; } }
+    .slot.win .bulbs i { animation-duration: .25s; }
+    .slot-title {
+      margin: 6px 0 8px;
+      font-family: var(--f-latin);
+      font-weight: 700;
+      font-size: .82rem;
+      letter-spacing: .3em;
+      padding-left: .3em;
+      color: #ffd75e;
+      text-shadow: 0 0 8px rgba(255, 184, 0, 0.8);
+    }
+    .slot-title b { font-family: var(--f-num); font-size: 1.1rem; color: #ff4d4d; text-shadow: 0 0 10px rgba(255, 60, 60, 0.9); }
+    .slot-window {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 6px;
+      margin-bottom: 8px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #0b0b10, #1b1b24 50%, #0b0b10);
+      box-shadow: inset 0 0 0 2px #6e4100, inset 0 6px 14px rgba(0, 0, 0, 0.8);
+    }
+    .pay-arrow { flex: 0 0 auto; width: 0; height: 0; border-top: 7px solid transparent; border-bottom: 7px solid transparent; }
+    .pay-arrow.l { border-left: 9px solid #ff4d4d; }
+    .pay-arrow.r { border-right: 9px solid #ff4d4d; }
+    .slot-reels { flex: 1; min-width: 0; display: flex; gap: 4px; }
+    .reel {
+      position: relative;
+      flex: 1 1 0;
+      min-width: 0;
+      height: var(--cell);
+      overflow: hidden;
+      border-radius: 9px;
+      background: linear-gradient(180deg, #b9b9c2 0%, #f4f4f6 30%, #ffffff 50%, #f4f4f6 70%, #b9b9c2 100%);
+    }
+    .reel::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.45), transparent 28%, transparent 72%, rgba(0, 0, 0, 0.45));
+    }
+    .reel .strip { will-change: transform; }
+    .reel .cell { height: var(--cell); display: grid; place-items: center; }
+    .reel .cell .ball { width: 84%; height: auto; max-width: 42px; aspect-ratio: 1 / 1; font-size: clamp(.7rem, 3.6vw, .95rem); }
+    .reel.spinning .strip { filter: blur(1.2px); }
+    .reel.stopped { animation: reelHit .45s ease-out; }
+    @keyframes reelHit { 0% { box-shadow: 0 0 0 0 rgba(255, 215, 94, 0); } 30% { box-shadow: 0 0 0 2px #ffd75e, 0 0 16px #ffb800; } 100% { box-shadow: 0 0 0 0 rgba(255, 215, 94, 0); } }
+    .slot.win .reel { box-shadow: 0 0 0 2px #ffd75e, 0 0 14px #ffb800; }
+    .slot.shake { animation: shake .35s ease-in-out; }
+    @keyframes shake { 0%, 100% { transform: none; } 25% { transform: translateY(3px); } 60% { transform: translateY(-2px); } }
+
     .machine-text {
       font-family: var(--f-display);
       font-weight: 700;
@@ -1197,6 +1268,7 @@
       padding: 10px 24px calc(30px + env(safe-area-inset-bottom));
     }
 
+    body.spinning .mascot, body.spinning .bubble { opacity: 0; pointer-events: none; transform: translateX(30px); transition: opacity .2s, transform .25s; }
     body.typing .mascot, body.typing .bubble { opacity: 0; pointer-events: none; transform: scale(.6); transition: opacity .2s, transform .2s; }
 
     @media (min-width: 600px) {
@@ -1219,6 +1291,10 @@
       .game .balls { gap: 3px; }
       .ball-row { gap: 6px; }
       .ball .star { width: 15px; height: 15px; font-size: 9px; }
+      .slot { --cell: 50px; padding: 8px 6px 6px; }
+      .slot-window { padding: 6px 4px; gap: 3px; }
+      .slot-reels { gap: 3px; }
+      .slot-title { font-size: .7rem; }
       .gauge { width: 88px; height: 88px; }
       .g-num b { font-size: 1.55rem; }
       .luck-main { gap: 12px; }
@@ -1287,9 +1363,17 @@
     </div>
 
     <section class="panel machine-wrap" id="machineCard" hidden aria-live="polite">
-      <div class="drum" id="drum"></div>
-      <div class="drum-stand"></div>
-      <div class="machine-text">황금 드럼 추첨 중<span class="dots"></span></div>
+      <div class="slot" id="slot">
+        <div class="bulbs" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="slot-title">LUCKY <b>7</b> JACKPOT</div>
+        <div class="slot-window">
+          <span class="pay-arrow l" aria-hidden="true"></span>
+          <div class="slot-reels" id="slotReels"></div>
+          <span class="pay-arrow r" aria-hidden="true"></span>
+        </div>
+        <div class="bulbs" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
+      <div class="machine-text" id="slotText">두근두근</div>
     </section>
 
     <section class="panel" id="results" hidden aria-live="polite">
@@ -1706,7 +1790,6 @@
       const resultsEl = $('results');
       const gameListEl = $('gameList');
       const machineCard = $('machineCard');
-      const drumEl = $('drum');
       let lastGames = [];
       let lastMine = new Set();
       let selected = [];
@@ -1851,16 +1934,77 @@
         }
       }
 
-      function fillDrum() {
-        drumEl.innerHTML = '';
-        for (let i = 0; i < 14; i++) {
-          const n = 1 + Math.floor(rand() * MAX);
-          const b = ballEl(n, 'mini');
-          const r = () => `${Math.round((rand() - 0.5) * 100)}px`;
-          ['--x1', '--y1', '--x2', '--y2', '--x3', '--y3'].forEach(k => b.style.setProperty(k, r()));
-          b.style.setProperty('--d', `${0.35 + rand() * 0.4}s`);
-          drumEl.appendChild(b);
-        }
+      /* ---------- 슬롯머신: 릴 6개가 돌다가 A게임 번호에서 하나씩 멈춤 ---------- */
+      function spinSlot(target, mine, isRetry) {
+        return new Promise((resolve) => {
+          const reelsEl = $('slotReels'), slot = $('slot'), text = $('slotText');
+          slot.classList.remove('win', 'shake');
+          reelsEl.innerHTML = '';
+          text.innerHTML = '두근두근<span class="dots"></span>';
+          const base = isRetry ? 650 : 950, step = isRetry ? 170 : 260, suspense = isRetry ? 380 : 750;
+          const stops = target.map((_, i) => base + i * step + (i === target.length - 1 ? suspense : 0));
+          const total = stops[stops.length - 1];
+
+          const reels = target.map((n, i) => {
+            const reel = document.createElement('div');
+            reel.className = 'reel spinning';
+            const strip = document.createElement('div');
+            strip.className = 'strip';
+            const count = 16 + i * 5 + (i === target.length - 1 ? 8 : 0);
+            for (let k = 0; k < count; k++) {
+              const cell = document.createElement('div');
+              cell.className = 'cell';
+              cell.appendChild(ballEl(1 + Math.floor(rand() * MAX)));
+              strip.appendChild(cell);
+            }
+            const last = document.createElement('div');
+            last.className = 'cell';
+            const ball = ballEl(n);
+            if (mine.has(n)) {
+              const st = document.createElement('span');
+              st.className = 'star';
+              st.textContent = '★';
+              ball.appendChild(st);
+            }
+            last.appendChild(ball);
+            strip.appendChild(last);
+            reel.appendChild(strip);
+            reelsEl.appendChild(reel);
+            return { reel, strip, count };
+          });
+
+          slot.classList.add('shake');   // 레버 당긴 느낌
+          requestAnimationFrame(() => {
+            const cellH = reels[0].reel.getBoundingClientRect().height || 58;
+            reels.forEach(({ reel, strip, count }, i) => {
+              const end = -count * cellH;
+              const anim = strip.animate([
+                { transform: 'translateY(0)' },
+                { transform: `translateY(${end - cellH * 0.18}px)`, offset: 0.93 },
+                { transform: `translateY(${end}px)` }
+              ], { duration: stops[i], easing: 'cubic-bezier(.15,.55,.25,1)', fill: 'forwards' });
+              anim.onfinish = () => {
+                reel.classList.remove('spinning');
+                reel.classList.add('stopped');
+                if (navigator.vibrate) navigator.vibrate(i === target.length - 1 ? 60 : 15);
+              };
+              // 마지막 릴만 남으면 긴장감
+              if (i === target.length - 2) {
+                setTimeout(() => { text.innerHTML = '마지막 하나<span class="dots"></span>'; }, stops[i]);
+              }
+            });
+          });
+
+          sfx.reelTicks(total);
+          stops.forEach((ms, i) => sfx.reelStop(ms, i === stops.length - 1));
+          sfx.jackpot(total + 120);
+
+          setTimeout(() => {
+            slot.classList.add('win');
+            text.innerHTML = '🎉 잭팟! 5게임 완성';
+          }, total + 80);
+          setTimeout(resolve, total + 750);
+        });
       }
 
       function currentTab() {
@@ -1968,7 +2112,67 @@
           o.stop(t + 0.13);
           clack(c, c.destination, t, 0.1);
         }
-        return { get, tumble, drop };
+        // 릴이 돌 때 '틱틱틱' (점점 느려짐)
+        function reelTicks(totalMs) {
+          const c = get();
+          if (!c) return;
+          const t0 = c.currentTime + 0.02;
+          let t = 0, gap = 0.045;
+          while (t < totalMs / 1000) {
+            const prog = t / (totalMs / 1000);
+            const o = c.createOscillator();
+            o.type = 'square';
+            o.frequency.value = 1500 + Math.random() * 300;
+            const g = c.createGain();
+            const at = t0 + t;
+            g.gain.setValueAtTime(0.0001, at);
+            g.gain.exponentialRampToValueAtTime(0.05 * (1 - prog * 0.6), at + 0.002);
+            g.gain.exponentialRampToValueAtTime(0.0001, at + 0.02);
+            o.connect(g).connect(c.destination);
+            o.start(at);
+            o.stop(at + 0.03);
+            t += gap;
+            gap *= prog > 0.6 ? 1.06 : 1.0;
+          }
+        }
+        // 릴이 멈출 때 '탁!'
+        function reelStop(atMs, last) {
+          const c = get();
+          if (!c) return;
+          const t = c.currentTime + atMs / 1000;
+          const o = c.createOscillator();
+          o.type = 'triangle';
+          o.frequency.setValueAtTime(last ? 260 : 200, t);
+          o.frequency.exponentialRampToValueAtTime(70, t + 0.12);
+          const g = c.createGain();
+          g.gain.setValueAtTime(0.0001, t);
+          g.gain.exponentialRampToValueAtTime(last ? 0.5 : 0.35, t + 0.005);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+          o.connect(g).connect(c.destination);
+          o.start(t);
+          o.stop(t + 0.18);
+          clack(c, c.destination, t, 0.3);
+        }
+        // 잭팟 '딩딩딩딩~'
+        function jackpot(atMs) {
+          const c = get();
+          if (!c) return;
+          const t0 = c.currentTime + atMs / 1000;
+          [784, 988, 1175, 1568, 1175, 1568].forEach((f, i) => {
+            const o = c.createOscillator();
+            o.type = 'triangle';
+            o.frequency.value = f;
+            const g = c.createGain();
+            const t = t0 + i * 0.08;
+            g.gain.setValueAtTime(0.0001, t);
+            g.gain.exponentialRampToValueAtTime(0.14, t + 0.01);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + (i === 5 ? 0.5 : 0.14));
+            o.connect(g).connect(c.destination);
+            o.start(t);
+            o.stop(t + 0.55);
+          });
+        }
+        return { get, tumble, drop, reelTicks, reelStop, jackpot };
       })();
 
       function run(isRetry) {
@@ -1980,19 +2184,16 @@
 
         const items = parseInput(myNums.join(' '));
         const { weights, mine } = buildWeights(items, STRENGTH);
+        const games = makeGames(weights);   // 결과를 먼저 정하고, 슬롯이 A게임 번호에 멈춤
 
         resultsEl.hidden = true;
-        fillDrum();
         machineCard.hidden = false;
         machineCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
         if (navigator.vibrate) navigator.vibrate([20, 40, 20]);
-        const drumMs = reduceMotion ? 150 : (isRetry ? 1200 : 1800);
-        if (!reduceMotion) sfx.tumble(drumMs / 1000);   // 버튼을 누른 순간에 시작해야 아이폰에서도 소리가 남
 
-        setTimeout(() => {
+        const reveal = () => {
           machineCard.hidden = true;
-          drumEl.innerHTML = '';
-          lastGames = makeGames(weights);
+          lastGames = games;
           lastMine = mine;
           selected = lastGames.map(() => true);
           savedId = null;
@@ -2012,7 +2213,11 @@
           else if (isRetry) toast('새로운 5게임을 뽑았어요');
           busy = false;
           syncDock();
-        }, drumMs);
+        };
+
+        if (reduceMotion || !Element.prototype.animate) { setTimeout(reveal, 150); return; }
+        document.body.classList.add('spinning');   // 다람쥐가 릴을 가리지 않게 잠깐 숨김
+        spinSlot(games[0], mine, isRetry).then(() => { document.body.classList.remove('spinning'); reveal(); });   // 버튼을 누른 순간 소리 시작 (아이폰)
       }
 
       function resetAll() {
