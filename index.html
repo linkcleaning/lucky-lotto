@@ -268,7 +268,13 @@
     button.pchip .chip-x { color: var(--mute); font-size: .8rem; line-height: 1; }
     .parsed { margin-top: 16px; }
     .parsed-title { font-size: .82rem; color: var(--sub); margin-bottom: 8px; }
-    .parsed-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .parsed-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+    .parsed-chips.clamped { max-height: 66px; overflow: hidden; }
+    .parsed-chips button.pchip { min-height: 30px; padding: 3px 8px; font-size: .8rem; gap: 4px; }
+    .parsed-chips button.pchip b { font-weight: 700; }
+    .chips-more { display: block; margin: 6px 0 0; padding: 4px 2px; border: none; background: none; color: var(--gold); font-size: .8rem; cursor: pointer; min-height: 30px; }
+    .mynum-sum { margin: 8px 0 0; font-size: .78rem; color: var(--sub); line-height: 1.5; }
+    .mynum-sum b { color: var(--gold-l); font-family: var(--f-num); font-weight: 700; }
     .pchip {
       font-size: .8rem;
       border-radius: 8px;
@@ -1069,22 +1075,23 @@
       align-items: center;
       justify-content: center;
       gap: 2px;
-      color: #1b1406;
+      color: #2a1700;
+      text-shadow: 0 1px 0 rgba(255, 230, 150, 0.55);
       background:
-        radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.85) 0 6%, transparent 22%),
-        radial-gradient(circle at 50% 45%, #fff3c4 0%, var(--gold-l) 28%, var(--gold) 64%, #9c7417 100%);
+        radial-gradient(circle at 34% 26%, rgba(255, 250, 220, 0.9) 0 5%, transparent 18%),
+        radial-gradient(circle at 50% 42%, #ffd75e 0%, #f2b705 30%, #d18f00 62%, #9a5f00 88%, #6e4100 100%);
       box-shadow:
-        0 0 0 6px rgba(212, 175, 55, 0.16),
-        0 0 0 13px rgba(212, 175, 55, 0.07),
-        0 18px 34px -12px rgba(212, 175, 55, 0.75),
-        inset 0 -6px 14px rgba(120, 80, 10, 0.45),
-        inset 0 3px 6px rgba(255, 255, 255, 0.6);
+        0 0 0 6px rgba(230, 160, 0, 0.22),
+        0 0 0 13px rgba(230, 160, 0, 0.09),
+        0 18px 34px -12px rgba(230, 150, 0, 0.85),
+        inset 0 -7px 16px rgba(90, 45, 0, 0.6),
+        inset 0 3px 6px rgba(255, 240, 180, 0.7);
       transition: transform .12s, filter .2s;
       animation: glow 2.6s ease-in-out infinite;
     }
     @keyframes glow {
-      0%, 100% { box-shadow: 0 0 0 6px rgba(212,175,55,.16), 0 0 0 13px rgba(212,175,55,.07), 0 18px 34px -12px rgba(212,175,55,.75), inset 0 -6px 14px rgba(120,80,10,.45), inset 0 3px 6px rgba(255,255,255,.6); }
-      50%      { box-shadow: 0 0 0 9px rgba(212,175,55,.22), 0 0 0 20px rgba(212,175,55,.06), 0 18px 40px -10px rgba(212,175,55,.9), inset 0 -6px 14px rgba(120,80,10,.45), inset 0 3px 6px rgba(255,255,255,.6); }
+      0%, 100% { box-shadow: 0 0 0 6px rgba(230,160,0,.22), 0 0 0 13px rgba(230,160,0,.09), 0 18px 34px -12px rgba(230,150,0,.85), inset 0 -7px 16px rgba(90,45,0,.6), inset 0 3px 6px rgba(255,240,180,.7); }
+      50%      { box-shadow: 0 0 0 9px rgba(230,160,0,.3), 0 0 0 20px rgba(230,160,0,.08), 0 18px 40px -10px rgba(240,160,0,1), inset 0 -7px 16px rgba(90,45,0,.6), inset 0 3px 6px rgba(255,240,180,.7); }
     }
     .draw-btn:active:not(:disabled) { transform: scale(.95); }
     .draw-btn:disabled { filter: grayscale(.4) brightness(.8); cursor: wait; animation: none; }
@@ -1263,8 +1270,10 @@
         <button class="btn num-add-btn" id="numAdd" type="button">넣기</button>
       </div>
       <div class="parsed" id="parsedBox" hidden>
-        <div class="parsed-title">내 숫자 <span>· 누르면 빠져요</span></div>
+        <div class="parsed-title">내 숫자 <span id="numCount"></span><span>· 누르면 빠져요</span></div>
         <div class="parsed-chips" id="parsedChips"></div>
+        <button type="button" class="chips-more" id="chipsMore" hidden></button>
+        <p class="mynum-sum" id="numSum"></p>
       </div>
     </section>
 
@@ -1720,8 +1729,9 @@
         if (myNums.length) store.setRaw(KEY_INPUT, myNums.join(' '));
         else store.del(KEY_INPUT);
       }
+      let chipsOpen = false;
       function renderNums() {
-        const box = $('parsedBox'), chips = $('parsedChips');
+        const box = $('parsedBox'), chips = $('parsedChips'), more = $('chipsMore');
         chips.innerHTML = '';
         if (!myNums.length) { box.hidden = true; return; }
         myNums.forEach((raw, i) => {
@@ -1730,10 +1740,7 @@
           btn.type = 'button';
           btn.className = 'pchip' + (it && it.ok ? '' : ' bad');
           btn.setAttribute('aria-label', `${raw} 빼기`);
-          const label = !it || !it.ok ? `${escapeHtml(raw)}`
-            : it.note === '분할' ? `${escapeHtml(raw)} → <b>${it.nums.join(', ')}</b>`
-            : `<b>${it.nums[0]}</b>`;
-          btn.innerHTML = `${label}<span class="chip-x" aria-hidden="true">✕</span>`;
+          btn.innerHTML = `<b>${escapeHtml(raw)}</b><span class="chip-x" aria-hidden="true">✕</span>`;
           btn.addEventListener('click', () => {
             myNums.splice(i, 1);
             saveNums();
@@ -1742,7 +1749,23 @@
           chips.appendChild(btn);
         });
         box.hidden = false;
+        $('numCount').textContent = `${myNums.length}개 `;
+
+        // 실제로 반영되는 1~45 번호 요약 (긴 숫자는 두 자리씩 나눈 결과)
+        const set = new Set();
+        parseInput(myNums.join(' ')).forEach(it => it.nums.forEach(n => set.add(n)));
+        const nums = [...set].sort((a, b) => a - b);
+        $('numSum').innerHTML = nums.length ? `반영 번호 <b>${nums.join(' · ')}</b>` : '';
+
+        // 두 줄이 넘으면 접어두고 '더 보기'
+        chips.classList.remove('clamped');
+        const tooTall = chips.scrollHeight > 70;
+        chips.classList.toggle('clamped', tooTall && !chipsOpen);
+        more.hidden = !tooTall;
+        more.textContent = chipsOpen ? '접기 ▴' : `전체 ${myNums.length}개 보기 ▾`;
       }
+      $('chipsMore').addEventListener('click', () => { chipsOpen = !chipsOpen; renderNums(); });
+
       // 입력칸의 숫자를 내 숫자에 넣기 (점·쉼표·띄어쓰기로 여러 개도 한 번에)
       function addFromInput() {
         const parts = numInput.value.split(/[^0-9]+/).filter(Boolean);
