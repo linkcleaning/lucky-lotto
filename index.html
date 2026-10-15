@@ -1231,6 +1231,26 @@
     body.typing .to-top { display: none; }
     .toast { bottom: calc(84px + env(safe-area-inset-bottom)) !important; }
 
+    .btn-deepgold {
+      color: #2a1700;
+      text-shadow: 0 1px 0 rgba(255, 230, 150, 0.55);
+      background: linear-gradient(180deg, #ffd75e 0%, #f2b705 35%, #d18f00 70%, #9a5f00 100%);
+      box-shadow: 0 10px 24px -10px rgba(230, 150, 0, 0.9), inset 0 1px 0 rgba(255, 240, 180, 0.8), inset 0 -3px 0 rgba(90, 45, 0, 0.45);
+    }
+    .reset-btn {
+      display: block;
+      margin: 6px auto 0;
+      padding: 10px 16px;
+      min-height: 42px;
+      border-radius: 999px;
+      border: 1px dashed var(--line-soft);
+      background: transparent;
+      color: var(--mute);
+      font-size: .8rem;
+      cursor: pointer;
+    }
+    .reset-btn.armed { color: #fff; background: #b8323f; border-color: transparent; font-weight: 700; }
+
     .confetti {
       position: fixed;
       top: 0; left: 0;
@@ -1389,11 +1409,8 @@
         <button class="btn btn-line" id="saveBtn" style="width:100%">선택한 5게임 저장</button>
         <button class="save-done-link" id="savedLink" type="button" hidden>저장한 번호 보기 ›</button>
       </div>
-      <button class="btn btn-gold" id="retryBtn" type="button" style="margin-top:10px">다시 뽑기</button>
-      <div class="row-2">
-        <button class="btn btn-kakao" id="shareBtn">카톡 보내기</button>
-        <button class="btn btn-ghost" id="clearBtn">처음부터</button>
-      </div>
+      <button class="btn btn-gold btn-deepgold" id="retryBtn" type="button" style="margin-top:10px">✨ 행운 번호 뽑기</button>
+      <button class="btn btn-kakao" id="shareBtn" style="width:100%;margin-top:10px">카톡 보내기</button>
     </section>
 
     <section class="panel luck" id="luckCard">
@@ -1451,6 +1468,8 @@
       </div>
       <p class="luck-note">재미로 보는 운세예요. 실제 당첨 확률은 어느 날이든 같아요.</p>
     </section>
+
+    <button class="reset-btn" id="clearBtn" type="button">처음부터 다시 · 전체 초기화</button>
   </main>
 
   <!-- ================= 당첨 확인 ================= -->
@@ -2234,7 +2253,6 @@
         machineCard.hidden = true;
         store.del(KEY_INPUT);
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        setTimeout(() => numInput.focus({ preventScroll: true }), 400);
         syncDock();
         toast('처음부터 다시 시작해요');
       }
@@ -2885,15 +2903,38 @@
       /* ================= 이벤트 ================= */
       drawBtn.addEventListener('click', () => run(lastGames.length > 0));
       $('retryBtn').addEventListener('click', () => run(true));
-      $('clearBtn').addEventListener('click', resetAll);
+      // 전체 초기화: 한 번 누르면 확인 문구, 한 번 더 누르면 초기화
+      $('clearBtn').addEventListener('click', () => {
+        const btn = $('clearBtn');
+        if (!btn.classList.contains('armed')) {
+          btn.classList.add('armed');
+          btn.textContent = '한 번 더 누르면 모두 지워져요';
+          clearTimeout(btn._t);
+          btn._t = setTimeout(() => { btn.classList.remove('armed'); btn.textContent = '처음부터 다시 · 전체 초기화'; }, 3500);
+          return;
+        }
+        clearTimeout(btn._t);
+        btn.classList.remove('armed');
+        btn.textContent = '처음부터 다시 · 전체 초기화';
+        resetAll();
+      });
       $('numAdd').addEventListener('click', () => {
         if (!/\d/.test(numInput.value)) { numInput.focus(); return; }
         addFromInput();
-        numInput.focus();   // 키패드를 닫지 않고 다음 숫자를 바로 입력
+        numInput.blur();   // 넣고 나면 키패드 닫기 (더 넣으려면 입력칸을 다시 누르거나 점(.)으로 이어 쓰기)
       });
+      // 넣기 버튼을 누를 때 입력칸 포커스가 먼저 풀려 버튼이 밀리지 않도록
+      $('numAdd').addEventListener('pointerdown', (e) => e.preventDefault());
       numInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); if (/\d/.test(numInput.value)) addFromInput(); }
+        if (e.key === 'Enter') { e.preventDefault(); if (/\d/.test(numInput.value)) addFromInput(); numInput.blur(); }
       });
+      // 입력칸 밖을 누르면 키패드 닫기
+      document.addEventListener('pointerdown', (e) => {
+        const a = document.activeElement;
+        if (!a || !a.matches || !a.matches('input, textarea')) return;
+        if (e.target.closest('input, textarea, button, label, .num-add')) return;
+        a.blur();
+      }, true);
       numInput.addEventListener('input', () => {
         // 점(.)·쉼표·띄어쓰기를 누르면 그 앞의 숫자를 바로 넣고, 뒤에 이어 쓰던 숫자는 칸에 남김
         const v = numInput.value;
