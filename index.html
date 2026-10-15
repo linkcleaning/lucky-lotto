@@ -1011,6 +1011,10 @@
       font-size: .92rem;
       cursor: pointer;
     }
+    .week-cta .chev { display: inline-block; margin-left: 4px; transition: transform .2s; }
+    .week-cta[aria-expanded="true"] { background: rgba(212, 175, 55, 0.14); }
+    .week-cta[aria-expanded="true"] .chev { transform: rotate(180deg); }
+    .week-close { margin-top: 12px; color: var(--sub); background: rgba(255, 255, 255, 0.04); border-color: var(--line-soft); }
     .week-pick {
       margin-top: 14px;
       padding: 14px;
@@ -1340,7 +1344,13 @@
           <div class="lrow"><span class="lk">피할 시간</span><span class="lv" id="luckBad"></span></div>
         </div>
         <p class="luck-rule"><b>40% 미만</b>인 날은 구매하지 마세요</p>
-        <button type="button" class="week-cta" id="weekOpen">이번 주 요일별 로또운 보기 <span aria-hidden="true">›</span></button>
+        <button type="button" class="week-cta" id="weekOpen" aria-expanded="false" aria-controls="weekBox"><span id="weekOpenTxt">이번 주 요일별 로또운 펼치기</span> <span class="chev" aria-hidden="true">▾</span></button>
+        <div class="week-box" id="weekBox" hidden>
+          <p class="panel-sub" id="weekSub" style="margin-top:12px"></p>
+          <div class="week-pick" id="weekPick"></div>
+          <div class="week-list" id="weekList"></div>
+          <button type="button" class="week-cta week-close" id="weekClose">접기 <span class="chev" aria-hidden="true">▴</span></button>
+        </div>
         <div class="luck-foot">
           <span id="luckWho"></span>
           <button type="button" class="link-btn" id="birthEdit">생일 바꾸기</button>
@@ -1402,22 +1412,6 @@
   </main>
 
   <!-- ================= 지난 당첨번호 ================= -->
-  <!-- ================= 이번 주 로또운 ================= -->
-  <main id="viewWeek" hidden>
-    <button class="home-link" type="button" data-home><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11 12 4l8.5 7M6 9.5V20h4.5v-5.5h3V20H18V9.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>홈으로</button>
-    <section class="panel">
-      <div style="text-align:center">
-        <div class="eyebrow">THIS WEEK</div>
-        <h3 class="panel-title" style="margin-top:6px">이번 주 로또운</h3>
-        <p class="panel-sub" id="weekSub"></p>
-      </div>
-      <div class="week-pick" id="weekPick"></div>
-      <div class="week-list" id="weekList"></div>
-      <p class="luck-rule"><b>40% 미만</b>인 날은 구매하지 마세요</p>
-      <p class="luck-note">재미로 보는 운세예요. 실제 당첨 확률은 어느 날이든 같아요.</p>
-    </section>
-  </main>
-
   <main id="viewPast" role="tabpanel" aria-labelledby="tabPast" hidden>
     <button class="home-link" type="button" data-home><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11 12 4l8.5 7M6 9.5V20h4.5v-5.5h3V20H18V9.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>홈으로</button>
     <section class="panel">
@@ -1847,7 +1841,7 @@
       }
 
       function currentTab() {
-        return !$('viewCheck').hidden ? 'check' : !$('viewPast').hidden ? 'past' : !$('viewWeek').hidden ? 'week' : 'gen';
+        return !$('viewCheck').hidden ? 'check' : !$('viewPast').hidden ? 'past' : 'gen';
       }
       function syncDock() {
         drawBtn.disabled = busy;
@@ -2615,14 +2609,13 @@
 
       /* ================= 탭 ================= */
       function showTab(name) {
-        const views = { gen: 'viewGen', check: 'viewCheck', past: 'viewPast', week: 'viewWeek' };
+        const views = { gen: 'viewGen', check: 'viewCheck', past: 'viewPast' };
         const tabs = { gen: 'tabGen', check: 'tabCheck', past: 'tabPast' };
         if (!views[name]) name = 'gen';
         Object.keys(views).forEach(k => {
           $(views[k]).hidden = k !== name;
           if (tabs[k]) $(tabs[k]).setAttribute('aria-selected', String(k === name));
         });
-        if (name === 'week') renderWeek();
         if (name !== 'check') clearInterval(cdTimer);
         if (name === 'check') renderCheck();
         if (name === 'past') renderPast();
@@ -2762,7 +2755,7 @@
         const best = ranked[0];
         const upcoming = ranked.find(x => x.val > 0 && x.end > nowH);
         const worst = slots.slice().sort((p, q) => p.val - q.val)[0];
-        const closed = nowHIn != null && (nowH >= closeH || nowH < openH);
+        const closed = nowHIn != null && nowH >= closeH;   // 추천 시간이 끝난 뒤만 (아침 9시 전은 아직 남은 시간)
 
         return { score, me, dp, ds, db, best, upcoming, worst, nowH, closed, closeH, dow, date: { ty, tm, td } };
       }
@@ -2816,6 +2809,7 @@
         $('luckBad').innerHTML = L.worst && L.worst.val < 0 ? fmtSlot(L.worst) : '특별히 없어요';
 
         $('luckWho').textContent = `${b.cal === 'lunar' ? '음력' : '양력'} ${b.ymd.slice(0, 4)}.${b.ymd.slice(4, 6)}.${b.ymd.slice(6, 8)} · ${ANIMALS[L.me.branch]}띠`;
+        if (!$('weekBox').hidden) renderWeek();
       }
 
       const tierOf = (sc) => sc >= 80 ? 'best' : sc >= 60 ? 'good' : sc >= 40 ? 'mid' : 'bad';
@@ -2904,7 +2898,19 @@
           <div class="wp-time">${slotTxt}</div>
           ${low.L.score < 40 && low !== top ? `<div class="wp-avoid">${low.isToday ? '오늘' : DOW[low.dow] + '요일'}은 ${low.L.score}%라 피하세요</div>` : ''}`;
       }
-      $('weekOpen').addEventListener('click', () => showTab('week'));
+      // 이번 주 로또운: 카드 안에서 펼치기 / 접기
+      function setWeekOpen(open) {
+        const box = $('weekBox'), btn = $('weekOpen');
+        box.hidden = !open;
+        btn.setAttribute('aria-expanded', String(open));
+        $('weekOpenTxt').textContent = open ? '이번 주 요일별 로또운 접기' : '이번 주 요일별 로또운 펼치기';
+        if (open) renderWeek();
+      }
+      $('weekOpen').addEventListener('click', () => setWeekOpen($('weekBox').hidden));
+      $('weekClose').addEventListener('click', () => {
+        setWeekOpen(false);
+        $('weekOpen').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+      });
 
       document.querySelectorAll('.cal-toggle [data-cal]').forEach(btn => btn.addEventListener('click', () => {
         birthCal = btn.dataset.cal;
@@ -2945,7 +2951,7 @@
       setInterval(() => {
         if (document.visibilityState !== 'visible') return;
         if (!$('viewGen').hidden) renderLuck();
-        if (!$('viewWeek').hidden) renderWeek();
+        if (!$('weekBox').hidden && !$('viewGen').hidden) renderWeek();
       }, 60e3);
 
       const TYPING_SEL = 'input[type="number"], #numInput, #birthInput';
@@ -3037,7 +3043,7 @@
       updateTabCount();
       mergeDraws();
       renderFinal();
-      if (location.hash === '#check') showTab('check'); else if (location.hash === '#past') showTab('past'); else if (location.hash === '#week') showTab('week'); else syncDock();
+      if (location.hash === '#check') showTab('check'); else if (location.hash === '#past') showTab('past'); else { syncDock(); if (location.hash === '#week') setWeekOpen(true); }
       loadDraws();
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') { updateBuyMeta(); renderLuck(); loadDraws(); }
