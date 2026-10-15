@@ -638,7 +638,33 @@
     .tline + .tline { border-top: 1px solid var(--line-soft); }
     .tline .lbl { width: 16px; flex-shrink: 0; font-family: var(--f-num); font-weight: 700; color: var(--mute); font-size: .8rem; text-align: center; }
     .tline .balls { flex: 1; min-width: 0; justify-content: flex-start; gap: 4px; }
-    .tline .ball { width: 32px; height: 32px; font-size: .8rem; }
+    .tline .ball { flex: 1 1 0; width: auto; height: auto; max-width: 34px; aspect-ratio: 1 / 1; font-size: clamp(.66rem, 3.4vw, .84rem); }
+    .line-x {
+      flex: 0 0 auto;
+      min-width: 30px;
+      height: 30px;
+      padding: 0 6px;
+      border-radius: 999px;
+      border: 1px solid var(--line-soft);
+      background: transparent;
+      color: var(--mute);
+      font-size: .78rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background .15s, color .15s;
+    }
+    .line-x.armed { color: #fff; background: #b8323f; border-color: transparent; font-family: var(--f-display); font-weight: 700; }
+    .rchip small.win { color: #1b1406; background: var(--win); border-radius: 999px; padding: 1px 6px; margin-left: 4px; font-weight: 700; }
+    .rchip[aria-pressed="true"] small.win { background: #1b1406; color: var(--win); }
+    .save-done-link { display: block; margin: 8px auto 0; border: none; background: none; color: var(--gold); font-size: .84rem; padding: 6px 10px; min-height: 36px; cursor: pointer; }
+    .qr-verdict { text-align: center; margin: 12px 0 4px; }
+    .qr-verdict b { display: block; font-family: var(--f-display); font-weight: 900; font-size: 1.35rem; }
+    .qr-verdict.won b { color: var(--win); }
+    .qr-verdict.lost b { color: var(--sub); }
+    .qr-verdict.wait b { color: var(--gold-l); }
+    .qr-verdict span { font-size: .82rem; color: var(--sub); }
+    .qr-draw { margin: 8px 0 12px; }
+    .qr-draw .ball { width: 30px; height: 30px; font-size: .74rem; }
     .badge {
       flex-shrink: 0;
       min-width: 46px;
@@ -1164,15 +1190,18 @@
 
     @media (min-width: 600px) {
       .ball { width: 44px; height: 44px; font-size: 1.05rem; }
-      .tline .ball { width: 36px; height: 36px; font-size: .88rem; }
+      .tline .ball { max-width: 36px; font-size: .88rem; }
     }
     @media (max-width: 360px) {
       main { padding: 14px 10px 8px; }
       .panel { padding: 18px 12px; }
       .ball { width: 34px; height: 34px; font-size: .86rem; }
       .balls { gap: 4px; }
-      .tline .ball { width: 27px; height: 27px; font-size: .7rem; }
-      .tline { gap: 5px; }
+      .tline { gap: 4px; }
+      .tline .balls { gap: 3px; }
+      .tline .lbl { width: 12px; font-size: .72rem; }
+      .line-x { min-width: 26px; height: 28px; padding: 0 4px; }
+      .qr-draw .ball { width: 26px; height: 26px; font-size: .66rem; }
       .badge { min-width: 40px; padding: 4px 6px; font-size: .72rem; }
       .pick { width: 28px; font-size: .58rem; }
       .game { gap: 6px; padding: 10px 8px 8px 6px; }
@@ -1261,6 +1290,7 @@
       <div class="save-box">
         <p>실제로 <b>구매한 게임만</b> 왼쪽 '저장'을 켜둔 채로 아래 버튼을 누르세요. 추첨이 끝나면 당첨 결과를 자동으로 맞춰봐요.</p>
         <button class="btn btn-line" id="saveBtn" style="width:100%">선택한 5게임 저장</button>
+        <button class="save-done-link" id="savedLink" type="button" hidden>저장한 번호 보기 ›</button>
       </div>
       <button class="btn btn-gold" id="retryBtn" type="button" style="margin-top:10px">다시 뽑기</button>
       <div class="row-2">
@@ -1787,6 +1817,7 @@
       const selKey = () => selected.map(v => (v ? 1 : 0)).join('');
       function savedTicketExists() { return savedId && getTickets().some(t => t.id === savedId); }
       function updateSaveBtn() {
+        $('savedLink').hidden = !savedTicketExists();
         const n = selected.filter(Boolean).length;
         const btn = $('saveBtn');
         const r = buyingRound();
@@ -1993,6 +2024,7 @@
       }
       function setTickets(list) { return store.set(KEY_TICKETS, list); }
 
+      $('savedLink').addEventListener('click', () => { checkRound = buyingRound(); showTab('check'); });
       $('saveBtn').addEventListener('click', () => {
         const games = lastGames.filter((_, i) => selected[i]);
         const list = getTickets();
@@ -2062,7 +2094,6 @@
 
       /* ================= 당첨 확인 화면 ================= */
       let checkRound = null;
-      let editId = null;
       const celebrated = {};
 
       function ticketRounds() {
@@ -2090,7 +2121,14 @@
           b.className = 'rchip';
           b.type = 'button';
           b.setAttribute('aria-pressed', String(r === checkRound));
-          const status = draws[r] ? '' : (Date.now() < roundDate(r).getTime() ? '<small>추첨 전</small>' : '<small>대기</small>');
+          let status;
+          if (draws[r]) {
+            const games = getTickets().filter(t => t.round === r).flatMap(t => t.games);
+            const ranks = games.map(g => rankOf(g, draws[r])).filter(Boolean);
+            status = ranks.length ? `<small class="win">${Math.min(...ranks)}등</small>` : '<small>낙첨</small>';
+          } else {
+            status = Date.now() < roundDate(r).getTime() ? '<small>추첨 전</small>' : '<small>대기</small>';
+          }
           b.innerHTML = `${r}회 ${status}`;
           b.addEventListener('click', () => { checkRound = r; renderCheck(); });
           chips.appendChild(b);
@@ -2231,32 +2269,6 @@
             ? ' · ' + ['자동', '반자동', '수동'].map(k => [k, t.types.filter(x => x === k).length]).filter(x => x[1]).map(x => `${x[0]} ${x[1]}`).join(' ')
             : '';
           head.innerHTML = `<span>${t.source === 'qr' ? '<b class="src">QR</b> ' : ''}${when} · ${t.games.length}게임${typeInfo}</span>`;
-          const tools = document.createElement('div');
-          tools.className = 'tools';
-          const edit = document.createElement('button');
-          edit.className = 'del';
-          edit.type = 'button';
-          edit.textContent = editId === t.id ? '완료' : '편집';
-          edit.addEventListener('click', () => { editId = editId === t.id ? null : t.id; renderCheck(); });
-          tools.appendChild(edit);
-          const del = document.createElement('button');
-          del.className = 'del';
-          del.type = 'button';
-          del.textContent = '삭제';
-          del.addEventListener('click', () => {
-            if (!del.classList.contains('confirm')) {
-              del.classList.add('confirm');
-              del.textContent = '한 번 더 누르면 삭제';
-              setTimeout(() => { del.classList.remove('confirm'); del.textContent = '삭제'; }, 3000);
-              return;
-            }
-            setTickets(getTickets().filter(x => x.id !== t.id));
-            updateTabCount();
-            renderCheck();
-            toast('저장한 번호를 삭제했어요');
-          });
-          tools.appendChild(del);
-          head.appendChild(tools);
           el.appendChild(head);
 
           t.games.forEach((g, i) => {
@@ -2271,28 +2283,6 @@
               balls.appendChild(ballEl(n, cls));
             });
             line.appendChild(balls);
-            if (editId === t.id) {
-              const rm = document.createElement('button');
-              rm.className = 'badge rm';
-              rm.type = 'button';
-              rm.textContent = '빼기';
-              rm.setAttribute('aria-label', `${'ABCDEFGHIJ'[i] || i + 1}게임 빼기`);
-              rm.addEventListener('click', () => {
-                const list = getTickets();
-                const x = list.find(v => v.id === t.id);
-                if (!x) return;
-                x.games.splice(i, 1);
-                if (Array.isArray(x.types)) x.types.splice(i, 1);
-                setTickets(x.games.length ? list : list.filter(v => v.id !== t.id));
-                if (!x.games.length) editId = null;
-                updateTabCount();
-                renderCheck();
-                toast('게임을 뺐어요');
-              });
-              line.appendChild(rm);
-              el.appendChild(line);
-              return;
-            }
             const badge = document.createElement('span');
             if (draw) {
               const r = rankOf(g, draw);
@@ -2303,6 +2293,32 @@
               badge.textContent = '대기';
             }
             line.appendChild(badge);
+
+            // 한 줄만 지우기: 한 번 누르면 '삭제'로 바뀌고, 한 번 더 누르면 지움
+            const rm = document.createElement('button');
+            rm.className = 'line-x';
+            rm.type = 'button';
+            rm.textContent = '✕';
+            rm.setAttribute('aria-label', `${'ABCDEFGHIJ'[i] || i + 1}게임 지우기`);
+            rm.addEventListener('click', () => {
+              if (!rm.classList.contains('armed')) {
+                rm.classList.add('armed');
+                rm.textContent = '삭제';
+                setTimeout(() => { if (rm.isConnected) { rm.classList.remove('armed'); rm.textContent = '✕'; } }, 2500);
+                return;
+              }
+              const list = getTickets();
+              const x = list.find(v => v.id === t.id);
+              if (!x) return;
+              x.games.splice(i, 1);
+              if (Array.isArray(x.types)) x.types.splice(i, 1);
+              setTickets(x.games.length ? list : list.filter(v => v.id !== t.id));
+              updateTabCount();
+              renderCheck();
+              updateSaveBtn();
+              toast('한 줄을 지웠어요');
+            });
+            line.appendChild(rm);
             el.appendChild(line);
           });
           box.appendChild(el);
@@ -2461,15 +2477,33 @@
         const box = $('qrResult');
         box.hidden = false;
         const dup = getTickets().some(x => x.qrKey && x.qrKey === t.key);
+        const draw = draws[t.round];
+        const drawn = Date.now() >= roundDate(t.round).getTime();
+        let verdict;
+        if (draw) {
+          const ranks = t.games.map(g => rankOf(g, draw));
+          const wins = ranks.filter(Boolean);
+          verdict = wins.length
+            ? `<div class="qr-verdict won"><b>🎉 ${Math.min(...wins)}등 당첨!</b><span>${t.games.length}게임 중 ${wins.length}게임 당첨 · 당첨금은 동행복권에서 확인하세요</span></div>`
+            : `<div class="qr-verdict lost"><b>아쉽게 낙첨이에요</b><span>${t.games.length}게임 모두 2개 이하로 맞았어요</span></div>`;
+        } else if (!drawn) {
+          verdict = `<div class="qr-verdict wait"><b>추첨 전이에요</b><span>${fmtDate(t.round)} 저녁 8시 35분 추첨 · 저장하면 결과를 자동으로 맞춰드려요</span></div>`;
+        } else {
+          verdict = `<div class="qr-verdict wait"><b>결과를 기다리는 중</b><span>당첨번호가 올라오면 자동으로 맞춰드려요</span></div>`;
+        }
         box.innerHTML = `<div class="eyebrow" style="text-align:center">LOTTO 6 / 45</div>
           <h4>${t.round}회 · ${t.games.length}게임</h4>
           <p class="panel-sub">추첨일 ${fmtDate(t.round)}</p>
+          ${verdict}
+          ${draw ? '<div class="qr-draw" id="qrDraw"></div>' : ''}
           <div class="ticket" id="qrGames"></div>
           ${dup ? '<p class="warn">이미 저장한 용지예요</p>' : ''}
           <div class="row-2">
             <button class="btn btn-ghost" id="qrAgain" type="button">다시 찍기</button>
-            <button class="btn btn-gold" id="qrSave" type="button" ${dup ? 'disabled' : ''}>저장하기</button>
+            <button class="btn btn-gold" id="qrSave" type="button" ${dup ? 'disabled' : ''}>${draw ? '기록 저장' : '저장하기'}</button>
           </div>`;
+        if (draw) appendDrawBalls($('qrDraw'), draw);
+        const win = draw ? new Set(draw.numbers) : null;
         const g = $('qrGames');
         t.games.forEach((nums, i) => {
           const line = document.createElement('div');
@@ -2477,14 +2511,24 @@
           line.innerHTML = `<span class="lbl">${'ABCDE'[i]}</span>`;
           const balls = document.createElement('div');
           balls.className = 'balls';
-          nums.forEach(n => balls.appendChild(ballEl(n)));
+          nums.forEach(n => balls.appendChild(ballEl(n, draw ? (win.has(n) ? 'hit' : (n === draw.bonus ? 'bonus-hit' : 'dim')) : '')));
           line.appendChild(balls);
           const ty = document.createElement('span');
-          ty.className = 'type';
-          ty.textContent = t.types[i];
+          if (draw) {
+            const r = rankOf(nums, draw);
+            ty.className = `badge r${r}`;
+            ty.textContent = r ? `${r}등` : '낙첨';
+          } else {
+            ty.className = 'type';
+            ty.textContent = t.types[i];
+          }
           line.appendChild(ty);
           g.appendChild(line);
         });
+        if (draw && t.games.some(x => rankOf(x, draw))) {
+          setTimeout(() => confetti(window.innerWidth / 2, window.innerHeight * 0.35, 70), 150);
+          if (navigator.vibrate) navigator.vibrate([60, 40, 120]);
+        }
         $('qrAgain').addEventListener('click', () => { $('qrResult').hidden = true; $('scanStage').hidden = false; startCamera(); });
         $('qrSave').addEventListener('click', () => {
           const list = getTickets();
@@ -2494,7 +2538,7 @@
           updateTabCount();
           checkRound = t.round;
           showTab('check');
-          toast(`${t.round}회 ${t.games.length}게임을 등록했어요`);
+          toast(draw ? `${t.round}회 결과를 저장했어요` : `${t.round}회 ${t.games.length}게임을 저장했어요 · 추첨 후 자동 확인`);
         });
       }
 
