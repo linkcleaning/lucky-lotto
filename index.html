@@ -1151,6 +1151,21 @@
     .lrow.good .lv { color: var(--gold-l); }
     .luck-rule { margin: 12px 0 0; font-size: .8rem; color: var(--sub); text-align: center; }
     .luck-rule b { color: #ff8b8b; }
+    .birth-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+      padding: 9px 12px;
+      border-radius: 12px;
+      background: rgba(9, 11, 18, 0.55);
+      border: 1px solid rgba(255, 215, 94, 0.35);
+      font-size: .86rem;
+      color: var(--ink);
+    }
+    .birth-bar #luckWho { flex: 1; min-width: 0; font-weight: 500; }
+    .birth-bar .link-btn { flex: 0 0 auto; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line); background: rgba(212, 175, 55, 0.1); }
+    #luckSetup.editing { margin-bottom: 14px; padding: 12px; border-radius: 14px; background: rgba(9, 11, 18, 0.55); border: 1px solid var(--line); }
     .luck-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 10px; font-size: .78rem; color: var(--mute); }
     .link-btn { border: none; background: none; color: var(--gold); font-size: .8rem; padding: 6px 2px; min-height: 32px; cursor: pointer; }
     .luck-note { margin: 10px 0 0; font-size: .72rem; color: var(--mute); text-align: center; }
@@ -1508,19 +1523,24 @@
       </div>
 
       <div id="luckSetup">
-        <p class="hint">생년월일을 넣으면 오늘 로또를 사도 좋은 날인지, 몇 시가 좋은지 알려드려요.</p>
+        <p class="hint" id="luckSetupHint">먼저 생년월일을 넣어주세요. 오늘 로또를 구매해도 좋은 날인지, 몇 시가 좋은지 알려드려요.</p>
         <div class="cal-toggle" role="radiogroup" aria-label="양력 음력 선택">
           <button type="button" role="radio" data-cal="solar" aria-checked="true">양력</button>
           <button type="button" role="radio" data-cal="lunar" aria-checked="false">음력</button>
         </div>
         <div class="num-add">
           <input id="birthInput" type="text" inputmode="numeric" maxlength="8" autocomplete="bday" placeholder="예) 19750312" aria-label="생년월일 8자리" />
-          <button class="btn num-add-btn" id="birthSave" type="button">보기</button>
+          <button class="btn num-add-btn" id="birthSave" type="button">확인</button>
         </div>
         <p class="err" id="birthErr"></p>
       </div>
 
       <div id="luckResult" hidden>
+        <div class="birth-bar">
+          <span class="bb-icon" aria-hidden="true">🎂</span>
+          <span id="luckWho"></span>
+          <button type="button" class="link-btn" id="birthEdit">생일 바꾸기</button>
+        </div>
         <div class="luck-main">
           <div class="gauge" id="luckGauge">
             <svg viewBox="0 0 120 120" aria-hidden="true">
@@ -1558,10 +1578,6 @@
           <div class="week-pick" id="weekPick"></div>
           <div class="week-list" id="weekList"></div>
           <button type="button" class="week-cta week-close" id="weekClose">접기 <span class="chev" aria-hidden="true">▴</span></button>
-        </div>
-        <div class="luck-foot">
-          <span id="luckWho"></span>
-          <button type="button" class="link-btn" id="birthEdit">생일 바꾸기</button>
         </div>
       </div>
       <p class="luck-note">재미로 보는 운세예요. 실제 당첨 확률은 어느 날이든 같아요.</p>
@@ -3057,6 +3073,7 @@
       const samhap = (a, b) => a !== b && (a % 4) === (b % 4);  // 신자진·해묘미·인오술·사유축
       const SIJIN = [[23, 1], [1, 3], [3, 5], [5, 7], [7, 9], [9, 11], [11, 13], [13, 15], [15, 17], [17, 19], [19, 21], [21, 23]];
       let birthCal = 'solar';
+      let editingBirth = false;
 
       function kstNow() { return new Date(Date.now() + 9 * 3600e3); }   // getUTC*로 한국 시각을 읽음
       function jdn(y, m, d) {
@@ -3184,11 +3201,15 @@
         const card = $('luckCard');
         if (!b || !/^\d{8}$/.test(b.ymd)) {
           $('luckSetup').hidden = false;
+          $('luckSetup').classList.remove('editing');
           $('luckResult').hidden = true;
           card.className = 'panel luck';
           return;
         }
-        $('luckSetup').hidden = true;
+        $('luckSetup').hidden = !editingBirth;
+        $('luckSetup').classList.toggle('editing', editingBirth);
+        $('birthEdit').textContent = editingBirth ? '닫기' : '생일 바꾸기';
+        $('luckSetupHint').textContent = editingBirth ? '새 생년월일을 넣고 확인을 누르세요.' : '먼저 생년월일을 넣어주세요. 오늘 로또를 구매해도 좋은 날인지, 몇 시가 좋은지 알려드려요.';
         $('luckResult').hidden = false;
         const L = luckToday(b);
         const tier = L.score >= 80 ? 'best' : L.score >= 60 ? 'good' : L.score >= 40 ? 'mid' : 'bad';
@@ -3197,9 +3218,9 @@
         requestAnimationFrame(() => { $('luckBar').style.strokeDashoffset = String(314.16 * (1 - L.score / 100)); });
 
         const VERDICT = {
-          best: ['오늘 꼭 사세요', '띠와 오늘 기운이 잘 맞는 날이에요. 좋은 시간에 맞춰 사보세요.'],
-          good: ['사도 좋아요', '무난하게 좋은 흐름이에요. 좋은 시간을 노려보세요.'],
-          mid:  ['가볍게 1~2게임만', '보통인 날이에요. 큰 기대 없이 소액만 즐기세요.'],
+          best: ['오늘 꼭 구매하세요!', '띠와 오늘 기운이 잘 맞는 날이에요. 좋은 시간에 맞춰 구매해 보세요.'],
+          good: ['구매하세요', '좋은 흐름이에요. 좋은 시간에 구매하면 더 좋아요.'],
+          mid:  ['1~2게임만 구매하세요', '보통인 날이에요. 소액으로 가볍게 즐기세요.'],
           bad:  ['오늘은 구매하지 마세요', '기운이 엇갈리는 날이에요. 다음 좋은 날을 기다려요.']
         };
         $('luckVerdict').textContent = VERDICT[tier][0];
@@ -3228,7 +3249,7 @@
       }
 
       const tierOf = (sc) => sc >= 80 ? 'best' : sc >= 60 ? 'good' : sc >= 40 ? 'mid' : 'bad';
-      const SHORT_VERDICT = { best: '꼭 사세요', good: '사도 좋아요', mid: '1~2게임만', bad: '사지 마세요' };
+      const SHORT_VERDICT = { best: '꼭 구매하세요', good: '구매하세요', mid: '1~2게임만 구매', bad: '구매하지 마세요' };
       const DOW = '일월화수목금토';
 
       // 이번 주 월~토 (일요일이면 다가오는 월~토)
@@ -3307,7 +3328,7 @@
           return;
         }
         const when = top.isToday ? '오늘' : `${DOW[top.dow]}요일(${top.m}.${top.d})`;
-        const slotTxt = top.goodSlot ? `${when} <b>${hourLabel(top.goodSlot.start)} ~ ${hourLabel(top.goodSlot.end)}</b>에 사세요` : `${when}에 사세요`;
+        const slotTxt = top.goodSlot ? `${when} <b>${hourLabel(top.goodSlot.start)} ~ ${hourLabel(top.goodSlot.end)}</b>에 구매하세요` : `${when}에 구매하세요`;
         pick.innerHTML = `<div class="wp-label">이번 주 가장 좋은 날</div>
           <div class="wp-day">${when} <b>${top.L.score}%</b></div>
           <div class="wp-time">${slotTxt}</div>
@@ -3349,19 +3370,23 @@
         if (err) { $('birthErr').textContent = err; return; }
         if (!store.set(KEY_BIRTH, { ymd, cal: birthCal })) { $('birthErr').textContent = '이 브라우저에서는 저장할 수 없어요'; return; }
         $('birthInput').blur();
+        editingBirth = false;
+        $('luckBar').style.strokeDashoffset = '314.16';
         renderLuck();
+        $('luckCard').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
       });
+      // 생일 바꾸기: 결과는 그대로 두고 위에 입력칸을 펼침
       $('birthEdit').addEventListener('click', () => {
+        editingBirth = !editingBirth;
         const b = store.get(KEY_BIRTH, null);
-        if (b) {
+        if (editingBirth && b) {
           $('birthInput').value = b.ymd;
           birthCal = b.cal;
           document.querySelectorAll('.cal-toggle [data-cal]').forEach(x => x.setAttribute('aria-checked', String(x.dataset.cal === b.cal)));
         }
-        store.del(KEY_BIRTH);
-        $('luckBar').style.strokeDashoffset = '314.16';
+        $('birthErr').textContent = '';
         renderLuck();
-        $('birthInput').focus();
+        if (editingBirth) $('birthInput').focus();
       });
       setInterval(() => {
         if (document.visibilityState !== 'visible') return;
