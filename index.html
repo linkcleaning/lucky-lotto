@@ -1348,6 +1348,26 @@
     }
     .reset-btn.armed { color: #fff; background: #b8323f; border-color: transparent; font-weight: 700; }
 
+    .my-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      text-align: left;
+      padding: 14px 16px;
+      color: var(--ink);
+      font-family: inherit;
+      cursor: pointer;
+      border-color: rgba(255, 215, 94, 0.4);
+    }
+    .my-icon { font-size: 1.6rem; flex: 0 0 auto; }
+    .my-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+    .my-body b { font-family: var(--f-display); font-weight: 800; font-size: 1rem; color: var(--gold-l); }
+    .my-line { font-size: .82rem; color: var(--sub); }
+    .my-line .st { font-weight: 700; color: var(--ink); }
+    .my-line .st.win { color: var(--win); }
+    .my-go { flex: 0 0 auto; font-family: var(--f-display); font-weight: 700; font-size: .86rem; color: var(--gold); }
+
     .confetti {
       position: fixed;
       top: 0; left: 0;
@@ -1440,7 +1460,7 @@
     <p>나에게 의미 있는 숫자로 뽑고, 구매한 번호는 회차별로 확인하세요</p>
     <nav class="tabs" role="tablist">
       <button class="tab" role="tab" id="tabGen" aria-selected="true" aria-controls="viewGen">번호 뽑기</button>
-      <button class="tab" role="tab" id="tabCheck" aria-selected="false" aria-controls="viewCheck">당첨 확인<span class="count" id="tabCount" hidden>0</span></button>
+      <button class="tab" role="tab" id="tabCheck" aria-selected="false" aria-controls="viewCheck">내 번호<span class="count" id="tabCount" hidden>0</span></button>
       <button class="tab" role="tab" id="tabPast" aria-selected="false" aria-controls="viewPast">지난 번호</button>
     </nav>
   </header>
@@ -1481,6 +1501,15 @@
         <span class="draw-sub">5게임</span>
       </button>
     </div>
+
+    <button class="panel my-card" id="myCard" type="button" hidden>
+      <span class="my-icon" aria-hidden="true">📒</span>
+      <span class="my-body">
+        <b>내가 저장한 번호</b>
+        <span id="myCardLines"></span>
+      </span>
+      <span class="my-go" aria-hidden="true">보기 ›</span>
+    </button>
 
     <section class="panel machine-wrap" id="machineCard" hidden aria-live="polite">
       <div class="slot" id="slot">
@@ -1895,6 +1924,7 @@
         } catch (e) {}
         mergeDraws();
         drawsLoaded = true;
+        renderMyCard();
         renderFinal();
         renderCheck();
         renderPast();
@@ -2065,6 +2095,7 @@
         } else {
           btn.textContent = n ? `바꾼 내용 저장 (${n}게임)` : '저장 취소하기';
         }
+        saveLast();
       }
 
       /* ---------- 슬롯머신: 릴 6개가 돌다가 A게임 번호에서 하나씩 멈춤 ---------- */
@@ -2366,6 +2397,7 @@
         resultsEl.hidden = true;
         machineCard.hidden = true;
         store.del(KEY_INPUT);
+        store.del(KEY_LAST);
         window.scrollTo({ top: 0, behavior: 'smooth' });
         syncDock();
         toast('처음부터 다시 시작해요');
@@ -2458,6 +2490,53 @@
         const c = $('tabCount');
         c.textContent = n;
         c.hidden = n === 0;
+        renderMyCard();
+      }
+
+      // 홈 화면 '내가 저장한 번호' 요약 (최근 2개 회차)
+      function renderMyCard() {
+        const card = $('myCard');
+        const tickets = getTickets();
+        if (!tickets.length) { card.hidden = true; return; }
+        const rounds = [...new Set(tickets.map(t => t.round))].sort((a, b) => b - a).slice(0, 2);
+        $('myCardLines').innerHTML = rounds.map(r => {
+          const games = tickets.filter(t => t.round === r).flatMap(t => t.games);
+          let st;
+          if (draws[r]) {
+            const ranks = games.map(g => rankOf(g, draws[r])).filter(Boolean);
+            st = ranks.length ? `<span class="st win">${Math.min(...ranks)}등 당첨!</span>` : '<span class="st">낙첨</span>';
+          } else {
+            st = Date.now() < roundDate(r).getTime() ? '<span class="st">추첨 전</span>' : '<span class="st">결과 기다리는 중</span>';
+          }
+          return `<span class="my-line">${r}회 · ${games.length}게임 · ${st}</span>`;
+        }).join('');
+        card.hidden = false;
+      }
+      $('myCard').addEventListener('click', () => {
+        const rounds = [...new Set(getTickets().map(t => t.round))].sort((a, b) => b - a);
+        checkRound = rounds[0];
+        showTab('check');
+      });
+
+      // 마지막으로 뽑은 번호를 기억 (앱을 다시 열어도 그대로)
+      const KEY_LAST = 'lucky-lotto-last-v1';
+      function saveLast() {
+        if (!lastGames.length) { store.del(KEY_LAST); return; }
+        store.set(KEY_LAST, { round: buyingRound(), games: lastGames, mine: [...lastMine], selected, savedId, savedSel });
+      }
+      function restoreLast() {
+        const L = store.get(KEY_LAST, null);
+        if (!L || !Array.isArray(L.games) || !L.games.length) return;
+        if (L.round !== buyingRound()) { store.del(KEY_LAST); return; }   // 지난 회차용이면 비움
+        lastGames = L.games;
+        lastMine = new Set(L.mine || []);
+        selected = Array.isArray(L.selected) && L.selected.length === lastGames.length ? L.selected : lastGames.map(() => true);
+        savedId = L.savedId || null;
+        savedSel = L.savedSel || '';
+        $('resultRound').textContent = `${L.round}회 대상`;
+        renderGames(lastGames, lastMine, false);
+        updateSaveBtn();
+        resultsEl.hidden = false;
       }
 
       function renderCheck() {
@@ -3478,6 +3557,7 @@
       /* ================= 시작 ================= */
       loadNums();
       renderNums();
+      restoreLast();
       updateBuyMeta();
       renderLuck();
       updateTabCount();
