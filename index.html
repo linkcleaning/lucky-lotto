@@ -540,8 +540,6 @@
       transition: border-color .2s, opacity .2s;
     }
     .game + .game { margin-top: 8px; }
-    .game.off { opacity: .45; }
-    .game.off .pick { background: transparent; color: var(--mute); border-color: var(--line-soft); }
     .pick {
       flex-shrink: 0;
       width: 32px;
@@ -562,8 +560,9 @@
       cursor: pointer;
       padding: 4px 0;
     }
-    .pick .ck { font-size: .8rem; line-height: 1; }
-    .game.off .pick .ck { opacity: 0; }
+    .pick .ck { font-size: .9rem; line-height: 1; font-weight: 900; }
+    .game.leaving { animation: saveOut .32s ease-in forwards; pointer-events: none; }
+    @keyframes saveOut { to { transform: translateX(60px) scale(.96); opacity: 0; } }
     .game-body { flex: 1; min-width: 0; }
     .ball-row { display: flex; align-items: center; gap: 8px; }
     .ball-row .balls { flex: 1; min-width: 0; }
@@ -1534,9 +1533,9 @@
       <div class="legend"><i>★</i> 표시는 내가 입력한 숫자에서 나온 번호예요</div>
 
       <div class="save-box">
-        <p>실제로 <b>구매한 게임만</b> 왼쪽 '저장'을 켜둔 채로 아래 버튼을 누르세요. 추첨이 끝나면 당첨 결과를 자동으로 맞춰봐요.</p>
+        <p>구매할 줄은 왼쪽 <b>＋저장</b>을 누르세요. 저장한 줄은 <b>내 번호</b>로 옮겨지고, 추첨이 끝나면 당첨 결과를 자동으로 맞춰봐요.</p>
         <button class="btn btn-line" id="saveBtn" style="width:100%">선택한 5게임 저장</button>
-        <button class="save-done-link" id="savedLink" type="button" hidden>저장한 번호 보기 ›</button>
+        <button class="save-done-link" id="savedLink" type="button" hidden>내 번호에서 저장한 번호 보기 ›</button>
       </div>
       <button class="btn btn-gold btn-deepgold" id="retryBtn" type="button" style="margin-top:10px">✨ 행운 번호 뽑기</button>
       <button class="btn btn-kakao" id="shareBtn" style="width:100%;margin-top:10px">💬 이 번호 카톡으로 보내기</button>
@@ -1658,7 +1657,7 @@
 
       <section class="panel" style="margin-top:14px">
         <div class="label-row">
-          <h2>내가 구매한 번호</h2>
+          <h2>내가 저장한 번호</h2>
           <span class="meta" id="myCount"></span>
         </div>
         <div id="ticketList"></div>
@@ -1955,9 +1954,6 @@
       const machineCard = $('machineCard');
       let lastGames = [];
       let lastMine = new Set();
-      let selected = [];
-      let savedId = null;       // 이번에 뽑은 번호를 저장한 티켓 id
-      let savedSel = '';        // 저장할 때의 선택 상태
       let busy = false;
 
       function updateBuyMeta() {
@@ -2031,18 +2027,13 @@
         gameListEl.innerHTML = '';
         games.forEach((g, gi) => {
           const row = document.createElement('div');
-          row.className = 'game' + (animate ? ' new' : '') + (selected[gi] ? '' : ' off');
+          row.className = 'game' + (animate ? ' new' : '');
           const pick = document.createElement('button');
           pick.className = 'pick';
           pick.type = 'button';
-          pick.innerHTML = '<span class="ck">✓</span>저장';
-          pick.setAttribute('aria-pressed', String(selected[gi]));
-          pick.setAttribute('aria-label', `${'ABCDE'[gi]}게임 저장 ${selected[gi] ? '켜짐' : '꺼짐'}`);
-          pick.addEventListener('click', () => {
-            selected[gi] = !selected[gi];
-            renderGames(lastGames, lastMine, false);
-            updateSaveBtn();
-          });
+          pick.innerHTML = '<span class="ck">＋</span>저장';
+          pick.setAttribute('aria-label', `${'ABCDE'[gi]}게임을 내 번호에 저장`);
+          pick.addEventListener('click', () => saveGames([gi]));
           const body = document.createElement('div');
           body.className = 'game-body';
           const balls = document.createElement('div');
@@ -2077,25 +2068,52 @@
         });
       }
 
-      const selKey = () => selected.map(v => (v ? 1 : 0)).join('');
-      function savedTicketExists() { return savedId && getTickets().some(t => t.id === savedId); }
       function updateSaveBtn() {
-        $('savedLink').hidden = !savedTicketExists();
-        const n = selected.filter(Boolean).length;
-        const btn = $('saveBtn');
         const r = buyingRound();
-        if (savedId && !savedTicketExists()) { savedId = null; savedSel = ''; }
-        btn.disabled = false;
-        btn.classList.toggle('saved', !!savedId && selKey() === savedSel);
-        if (!savedId) {
-          btn.textContent = n ? `선택한 ${n}게임 저장 · ${r}회` : '저장할 게임을 선택하세요';
-          btn.disabled = n === 0;
-        } else if (selKey() === savedSel) {
-          btn.textContent = `✓ ${r}회 ${n}게임 저장됨 · 누르면 저장 취소`;
-        } else {
-          btn.textContent = n ? `바꾼 내용 저장 (${n}게임)` : '저장 취소하기';
-        }
+        const n = lastGames.length;
+        const btn = $('saveBtn');
+        btn.textContent = n ? `남은 ${n}게임 모두 저장 · ${r}회` : '모두 저장했어요';
+        btn.disabled = n === 0;
+        $('savedLink').hidden = !getTickets().some(t => t.round === r);
         saveLast();
+      }
+
+      // 고른 줄을 '내 번호'에 저장하고 오늘의 번호 목록에서 빼기
+      function saveGames(indices) {
+        const idx = [...new Set(indices)].filter(i => lastGames[i]).sort((x, y) => x - y);
+        if (!idx.length) return;
+        const round = buyingRound();
+        const games = idx.map(i => lastGames[i]);
+        const k = kstNow();
+        const day = `${k.getUTCFullYear()}-${k.getUTCMonth() + 1}-${k.getUTCDate()}`;
+        const list = getTickets();
+        let t = list.find(x => x.source === 'gen' && x.round === round && x.day === day);
+        if (!t) {
+          t = { id: Date.now().toString(36) + Math.floor(rand() * 1e6).toString(36), round, savedAt: Date.now(), games: [], source: 'gen', day };
+          list.push(t);
+        }
+        t.games.push(...games);
+        t.savedAt = Date.now();
+        if (!setTickets(list)) { toast('이 브라우저에서는 저장할 수 없어요'); return; }
+        checkRound = round;
+        updateTabCount();
+
+        const rows = [...gameListEl.querySelectorAll('.game')];
+        idx.forEach(i => rows[i] && rows[i].classList.add('leaving'));
+        if (navigator.vibrate) navigator.vibrate(20);
+        setTimeout(() => {
+          lastGames = lastGames.filter((_, i) => !idx.includes(i));
+          if (lastGames.length) {
+            renderGames(lastGames, lastMine, false);
+            toast(`${games.length}게임을 내 번호에 저장했어요`);
+          } else {
+            gameListEl.innerHTML = '';
+            resultsEl.hidden = true;
+            toast(`${round}회 번호를 모두 내 번호에 저장했어요`);
+            if (idx.length > 1) showTab('check');   // '모두 저장'이면 내 번호로 바로 이동
+          }
+          updateSaveBtn();
+        }, reduceMotion ? 0 : 320);
       }
 
       /* ---------- 슬롯머신: 릴 6개가 돌다가 A게임 번호에서 하나씩 멈춤 ---------- */
@@ -2359,9 +2377,6 @@
           machineCard.hidden = true;
           lastGames = games;
           lastMine = mine;
-          selected = lastGames.map(() => true);
-          savedId = null;
-          savedSel = '';
           $('resultRound').textContent = `${buyingRound()}회 대상`;
           renderGames(lastGames, mine, true);
           if (!reduceMotion) {
@@ -2390,9 +2405,6 @@
         saveNums();
         renderNums();
         lastGames = [];
-        selected = [];
-        savedId = null;
-        savedSel = '';
         gameListEl.innerHTML = '';
         resultsEl.hidden = true;
         machineCard.hidden = true;
@@ -2411,38 +2423,7 @@
       function setTickets(list) { return store.set(KEY_TICKETS, list); }
 
       $('savedLink').addEventListener('click', () => { checkRound = buyingRound(); showTab('check'); });
-      $('saveBtn').addEventListener('click', () => {
-        const games = lastGames.filter((_, i) => selected[i]);
-        const list = getTickets();
-        const round = buyingRound();
-
-        // 저장된 상태에서 그대로 누르거나, 모두 빼고 누르면 → 저장 취소
-        if (savedId && (selKey() === savedSel || !games.length)) {
-          setTickets(list.filter(t => t.id !== savedId));
-          savedId = null;
-          savedSel = '';
-          updateSaveBtn();
-          updateTabCount();
-          toast('저장을 취소했어요');
-          return;
-        }
-        if (!games.length) return;
-
-        if (savedId) {                     // 선택을 바꿨으면 같은 티켓을 고쳐 저장
-          const t = list.find(x => x.id === savedId);
-          if (t) { t.games = games; t.savedAt = Date.now(); }
-        } else {
-          savedId = Date.now().toString(36) + Math.floor(rand() * 1e6).toString(36);
-          list.push({ id: savedId, round, savedAt: Date.now(), games, source: 'gen' });
-        }
-        if (!setTickets(list)) { toast('이 브라우저에서는 저장할 수 없어요'); savedId = null; return; }
-        const wasEdit = !!savedSel;
-        savedSel = selKey();
-        updateSaveBtn();
-        updateTabCount();
-        checkRound = round;
-        toast(wasEdit ? `${games.length}게임으로 고쳤어요` : `${round}회로 ${games.length}게임 저장했어요`);
-      });
+      $('saveBtn').addEventListener('click', () => saveGames(lastGames.map((_, i) => i)));
 
       /* ---------- 카톡 보내기 ---------- */
       function resultText() {
@@ -2522,7 +2503,7 @@
       const KEY_LAST = 'lucky-lotto-last-v1';
       function saveLast() {
         if (!lastGames.length) { store.del(KEY_LAST); return; }
-        store.set(KEY_LAST, { round: buyingRound(), games: lastGames, mine: [...lastMine], selected, savedId, savedSel });
+        store.set(KEY_LAST, { round: buyingRound(), games: lastGames, mine: [...lastMine] });
       }
       function restoreLast() {
         const L = store.get(KEY_LAST, null);
@@ -2530,9 +2511,6 @@
         if (L.round !== buyingRound()) { store.del(KEY_LAST); return; }   // 지난 회차용이면 비움
         lastGames = L.games;
         lastMine = new Set(L.mine || []);
-        selected = Array.isArray(L.selected) && L.selected.length === lastGames.length ? L.selected : lastGames.map(() => true);
-        savedId = L.savedId || null;
-        savedSel = L.savedSel || '';
         $('resultRound').textContent = `${L.round}회 대상`;
         renderGames(lastGames, lastMine, false);
         updateSaveBtn();
