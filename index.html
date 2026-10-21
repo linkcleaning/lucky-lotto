@@ -140,6 +140,7 @@
       white-space: nowrap;
       transition: background .2s, color .2s;
     }
+    .tab[aria-selected="true"] .count { color: #1b1406; background: rgba(27, 20, 6, 0.14); }
     .tab[aria-selected="true"] {
       color: #1b1406;
       background: linear-gradient(180deg, var(--gold-l), var(--gold) 60%, #b38a22);
@@ -154,9 +155,10 @@
       margin-left: 4px;
       border-radius: 999px;
       font-family: var(--f-num);
-      font-size: .72rem;
-      color: #fff;
-      background: #e0465d;
+      font-size: .68rem;
+      font-weight: 700;
+      color: var(--sub);
+      background: rgba(255, 255, 255, 0.08);
       vertical-align: 1px;
     }
 
@@ -756,6 +758,12 @@
     .badge.r1, .badge.r2, .badge.r3 { color: #1b1406; background: linear-gradient(180deg, var(--gold-l), var(--gold)); border-color: transparent; }
     .badge.r4, .badge.r5 { color: var(--win); border-color: rgba(255, 216, 107, 0.45); background: rgba(255, 216, 107, 0.08); }
     .badge.wait { color: var(--sub); }
+    .badge.two { display: flex; flex-direction: column; align-items: center; line-height: 1.15; padding: 4px 7px; border-radius: 12px; min-width: 52px; }
+    .badge.two b { font-size: .8rem; }
+    .badge.two i { font-style: normal; font-family: var(--f-body, inherit); font-weight: 600; font-size: .6rem; opacity: .85; white-space: nowrap; }
+    .tguide { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: .74rem; color: var(--sub); margin: 0 2px 10px; line-height: 1.45; }
+    .tguide span { display: inline-flex; align-items: center; gap: 5px; }
+    .tguide .ball.sw { width: 14px; height: 14px; min-width: 14px; font-size: 0; display: inline-block; border-radius: 50%; background: #cfd3dc; }
 
     .empty { text-align: center; padding: 26px 10px; }
     .empty .mark { font-family: var(--f-latin); color: var(--gold); letter-spacing: .3em; font-size: .78rem; }
@@ -1649,7 +1657,7 @@
         <h3 class="panel-title">당첨 대조 집계</h3>
         <p class="panel-sub" id="rankSub"></p>
         <table class="rank">
-          <thead><tr><th>등위</th><th>당첨 조건</th><th>건수</th></tr></thead>
+          <thead><tr><th>등위</th><th>당첨 조건</th><th>내 번호</th></tr></thead>
           <tbody id="rankBody"></tbody>
         </table>
         <div class="rank-foot" id="rankFoot"></div>
@@ -2469,7 +2477,7 @@
       function updateTabCount() {
         const n = getTickets().reduce((s, t) => s + t.games.length, 0);
         const c = $('tabCount');
-        c.textContent = n;
+        c.textContent = `${n}줄`;
         c.hidden = n === 0;
         renderMyCard();
       }
@@ -2536,7 +2544,7 @@
           if (draws[r]) {
             const games = getTickets().filter(t => t.round === r).flatMap(t => t.games);
             const ranks = games.map(g => rankOf(g, draws[r])).filter(Boolean);
-            status = ranks.length ? `<small class="win">${Math.min(...ranks)}등</small>` : '<small>낙첨</small>';
+            status = ranks.length ? `<small class="win">${Math.min(...ranks)}등 당첨</small>` : '<small>낙첨</small>';
           } else {
             status = Date.now() < roundDate(r).getTime() ? '<small>추첨 전</small>' : '<small>대기</small>';
           }
@@ -2551,7 +2559,7 @@
         renderDrawCard(checkRound, draw);
         renderRankTable(checkRound, draw, allGames);
         renderTickets(tickets, draw);
-        $('myCount').textContent = `${checkRound}회 · ${allGames.length}게임`;
+        $('myCount').textContent = `${checkRound}회 · ${allGames.length}줄`;
       }
 
       function appendDrawBalls(parent, draw) {
@@ -2649,11 +2657,11 @@
         const counts = [0, 0, 0, 0, 0, 0];
         games.forEach(g => counts[rankOf(g, draw)]++);
         const won = counts[1] + counts[2] + counts[3] + counts[4] + counts[5];
-        $('rankSub').textContent = `이 회차에 저장한 ${games.length}게임 기준`;
+        $('rankSub').textContent = `${round}회에 저장한 번호 ${games.length}줄을 맞춰본 결과`;
         $('rankBody').innerHTML = RANK_ROWS.map(([r, cond]) =>
-          `<tr class="${r === 0 ? 'miss' : ''}${r && counts[r] ? ' has' : ''}"><td>${r ? r + '등' : '낙첨'}</td><td>${cond}</td><td>${counts[r]}</td></tr>`
+          `<tr class="${r === 0 ? 'miss' : ''}${r && counts[r] ? ' has' : ''}"><td>${r ? r + '등' : '낙첨'}</td><td>${cond}</td><td>${counts[r]}줄</td></tr>`
         ).join('');
-        $('rankFoot').innerHTML = `당첨 <b>${won}건</b> / 전체 <b style="color:var(--ink)">${games.length}건</b>`;
+        $('rankFoot').innerHTML = `저장한 <b style="color:var(--ink)">${games.length}줄</b> 중 <b>${won}줄</b> 당첨`;
         card.hidden = false;
         if (won && !celebrated[round]) {
           celebrated[round] = true;
@@ -2669,6 +2677,12 @@
         const box = $('ticketList');
         box.innerHTML = '';
         const win = draw ? new Set(draw.numbers) : null;
+        const guide = document.createElement('div');
+        guide.className = 'tguide';
+        guide.innerHTML = draw
+          ? `<span><i class="ball sw hit"></i>당첨번호와 같은 숫자</span><span><i class="ball sw dim"></i>안 맞은 숫자</span><span><i class="ball sw bonus-hit"></i>보너스 번호</span>`
+          : `<span>추첨이 끝나면 당첨번호와 같은 숫자가 금색으로 빛나고, 오른쪽에 등수가 표시돼요</span>`;
+        box.appendChild(guide);
         tickets.slice().sort((a, b) => b.savedAt - a.savedAt).forEach(t => {
           const el = document.createElement('div');
           el.className = 'ticket';
@@ -2679,7 +2693,7 @@
           const typeInfo = t.source === 'qr' && Array.isArray(t.types)
             ? ' · ' + ['자동', '반자동', '수동'].map(k => [k, t.types.filter(x => x === k).length]).filter(x => x[1]).map(x => `${x[0]} ${x[1]}`).join(' ')
             : '';
-          head.innerHTML = `<span>${t.source === 'qr' ? '<b class="src">QR</b> ' : ''}${when} · ${t.games.length}게임${typeInfo}</span>`;
+          head.innerHTML = `<span>${t.source === 'qr' ? '<b class="src">QR</b> ' : ''}${when} · ${t.games.length}줄${typeInfo}</span>`;
           el.appendChild(head);
 
           t.games.forEach((g, i) => {
@@ -2697,11 +2711,13 @@
             const badge = document.createElement('span');
             if (draw) {
               const r = rankOf(g, draw);
-              badge.className = `badge r${r}`;
-              badge.textContent = r ? `${r}등` : '낙첨';
+              const hitN = g.filter(n => win.has(n)).length;
+              const bon = r === 2 ? '+보너스' : '';
+              badge.className = `badge two r${r}`;
+              badge.innerHTML = `<b>${r ? r + '등' : '낙첨'}</b><i>${hitN}개${bon} 맞음</i>`;
             } else {
-              badge.className = 'badge wait';
-              badge.textContent = '대기';
+              badge.className = 'badge two wait';
+              badge.innerHTML = '<b>대기</b><i>추첨 전</i>';
             }
             line.appendChild(badge);
 
@@ -3064,7 +3080,7 @@
             row.setAttribute('aria-label', `${r}회 내 번호 ${myCount[r]}게임 결과 보기`);
             row.addEventListener('click', () => { checkRound = r; showTab('check'); });
           }
-          row.innerHTML = `<div class="ph"><span class="rn">${r}회<span class="dt">${fmtDate(r)}${d.manual ? ' · 직접 입력' : ''}</span></span>${myCount[r] ? `<span class="my">내 번호 ${myCount[r]} ›</span>` : ''}</div>`;
+          row.innerHTML = `<div class="ph"><span class="rn">${r}회<span class="dt">${fmtDate(r)}${d.manual ? ' · 직접 입력' : ''}</span></span>${myCount[r] ? `<span class="my">내 번호 ${myCount[r]}줄 ›</span>` : ''}</div>`;
           appendDrawBalls(row, d);
           list.appendChild(row);
         });
