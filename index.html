@@ -563,6 +563,9 @@
       padding: 4px 0;
     }
     .pick .ck { font-size: .9rem; line-height: 1; font-weight: 900; }
+    .game.removing { animation: delOut .28s ease-in forwards; pointer-events: none; }
+    @keyframes delOut { to { transform: scale(.94); opacity: 0; } }
+    .game-x { align-self: center; }
     .game.leaving { animation: saveOut .32s ease-in forwards; pointer-events: none; }
     @keyframes saveOut { to { transform: translateX(60px) scale(.96); opacity: 0; } }
     .game-body { flex: 1; min-width: 0; }
@@ -1541,7 +1544,7 @@
       <div class="legend"><i>★</i> 표시는 내가 입력한 숫자에서 나온 번호예요</div>
 
       <div class="save-box">
-        <p>구매할 줄은 왼쪽 <b>＋저장</b>을 누르세요. 저장한 줄은 <b>내 번호</b>로 옮겨지고, 추첨이 끝나면 당첨 결과를 자동으로 맞춰봐요.</p>
+        <p>구매할 줄은 왼쪽 <b>＋저장</b>을 누르세요. 저장한 줄은 <b>내 번호</b>로 옮겨지고, 추첨이 끝나면 당첨 결과를 자동으로 맞춰봐요. 필요 없는 줄은 오른쪽 <b>✕</b>를 두 번 눌러 지우세요.</p>
         <button class="btn btn-line" id="saveBtn" style="width:100%">선택한 5게임 저장</button>
         <button class="save-done-link" id="savedLink" type="button" hidden>내 번호에서 저장한 번호 보기 ›</button>
       </div>
@@ -2064,6 +2067,22 @@
           brow.className = 'ball-row';
           brow.appendChild(pick);
           brow.appendChild(balls);
+          // 이 줄 지우기: 한 번 누르면 '삭제'로 바뀌고, 한 번 더 누르면 지움
+          const rm = document.createElement('button');
+          rm.className = 'line-x game-x';
+          rm.type = 'button';
+          rm.textContent = '✕';
+          rm.setAttribute('aria-label', `${'ABCDE'[gi]}게임 지우기`);
+          rm.addEventListener('click', () => {
+            if (!rm.classList.contains('armed')) {
+              rm.classList.add('armed');
+              rm.textContent = '삭제';
+              setTimeout(() => { if (rm.isConnected) { rm.classList.remove('armed'); rm.textContent = '✕'; } }, 2500);
+              return;
+            }
+            removeGame(gi);
+          });
+          brow.appendChild(rm);
           body.appendChild(brow);
           if (mine.size) {
             const meta = document.createElement('div');
@@ -2122,6 +2141,21 @@
           }
           updateSaveBtn();
         }, reduceMotion ? 0 : 320);
+      }
+
+      // 오늘의 번호에서 한 줄만 지우기 (저장하지 않음)
+      function removeGame(gi) {
+        if (!lastGames[gi]) return;
+        const rows = [...gameListEl.querySelectorAll('.game')];
+        if (rows[gi]) rows[gi].classList.add('removing');
+        if (navigator.vibrate) navigator.vibrate(15);
+        setTimeout(() => {
+          lastGames = lastGames.filter((_, i) => i !== gi);
+          if (lastGames.length) renderGames(lastGames, lastMine, false);
+          else { gameListEl.innerHTML = ''; resultsEl.hidden = true; }
+          toast(lastGames.length ? `한 줄을 지웠어요 · ${lastGames.length}줄 남음` : '오늘의 번호를 모두 지웠어요');
+          updateSaveBtn();
+        }, reduceMotion ? 0 : 280);
       }
 
       /* ---------- 슬롯머신: 릴 6개가 돌다가 A게임 번호에서 하나씩 멈춤 ---------- */

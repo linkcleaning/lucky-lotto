@@ -2,7 +2,7 @@
  * 코드를 수정해서 다시 배포할 때는 CACHE_VERSION 숫자를 올려 주세요.
  * 그래야 사용자 폰에 저장된 옛날 캐시가 새 버전으로 교체됩니다.
  */
-const CACHE_VERSION = 'v33';
+const CACHE_VERSION = 'v34';
 const CACHE_NAME = `lucky-lotto-${CACHE_VERSION}`;
 
 const JSQR_URL = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
