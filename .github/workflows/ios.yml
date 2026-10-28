@@ -1,0 +1,180 @@
+# 아이폰 앱 빌드
+#  - 시뮬레이터 빌드 + 스토어 스크린샷: 앱 파일이 바뀌면 자동 실행 (서명 없이, 비밀키 필요 없음)
+#  - TestFlight 업로드: Actions 탭 → "iOS 앱 빌드" → Run workflow → upload 체크
+name: iOS 앱 빌드
+
+on:
+  workflow_dispatch:
+    inputs:
+      upload:
+        description: 'App Store Connect(TestFlight)에 업로드'
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'privacy.html'
+      - 'ios/**'
+      - 'capacitor.config.json'
+      - 'package.json'
+      - 'scripts/build-www.mjs'
+      - 'scripts/shot.js'
+      - '.github/workflows/ios.yml'
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  simulator:
+    name: 시뮬레이터 빌드 + 스크린샷
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: 스크린샷용 웹 파일 준비
+        run: SHOTS=1 node scripts/build-www.mjs && npx cap sync ios
+      - name: Xcode 정보
+        run: xcodebuild -version && xcrun simctl list runtimes
+      - name: 시뮬레이터 고르기
+        id: sim
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)['devices']
+          c=[(rt,x) for rt,l in d.items() if 'iOS' in rt for x in l if 'Pro Max' in x['name']]
+          c.sort(key=lambda t:(t[0],t[1]['name']))
+          print(c[-1][1]['udid'] if c else '')")
+          if [ -z "$UDID" ]; then echo "Pro Max 시뮬레이터 없음"; xcrun simctl list devices available; exit 1; fi
+          xcrun simctl list devices | grep "$UDID"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+      - name: 빌드 (서명 없음)
+        run: |
+          set -o pipefail
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug \
+            -destination "id=${{ steps.sim.outputs.udid }}" -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO build | tail -n 60
+      - name: 실행하고 화면 찍기
+        run: |
+          UDID=${{ steps.sim.outputs.udid }}
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl status_bar "$UDID" override --time "9:41" --dataNetwork wifi --wifiMode active --wifiBars 3 --cellularMode active --cellularBars 4 --batteryState charged --batteryLevel 100
+          xcrun simctl ui "$UDID" appearance dark
+          APP=build/Build/Products/Debug-iphonesimulator/App.app
+          xcrun simctl install "$UDID" "$APP"
+          xcrun simctl privacy "$UDID" grant notifications kr.co.linkclean.luckylotto || true
+          sleep 3
+          xcrun simctl launch "$UDID" kr.co.linkclean.luckylotto
+          mkdir -p shots
+          START=$(date +%s)
+          for k in 1 2 3 4 5 6 7; do
+            T=$((10 + 7 * (k - 1)))
+            while [ $(( $(date +%s) - START )) -lt $T ]; do sleep 0.3; done
+            xcrun simctl io "$UDID" screenshot --type=png "shots/ios-$k.png"
+          done
+          ls -la shots
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-screenshots
+          path: shots/
+
+  testflight:
+    name: TestFlight 업로드
+    if: github.event_name == 'workflow_dispatch' && inputs.upload
+    needs: simulator
+    runs-on: macos-26
+    timeout-minutes: 60
+    env:
+      TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      PROFILE_NAME: ${{ secrets.IOS_PROFILE_NAME }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: 앱 웹 파일 준비
+        run: node scripts/build-www.mjs && npx cap sync ios
+      - name: 인증서·프로필·API 키 설치
+        env:
+          P12: ${{ secrets.IOS_DIST_P12 }}
+          P12_PASSWORD: ${{ secrets.IOS_DIST_P12_PASSWORD }}
+          PROFILE: ${{ secrets.IOS_PROFILE }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          KC=$RUNNER_TEMP/build.keychain-db
+          KP=$(openssl rand -hex 16)
+          security create-keychain -p "$KP" "$KC"
+          security set-keychain-settings -lut 21600 "$KC"
+          security unlock-keychain -p "$KP" "$KC"
+          echo "$P12" | base64 --decode > $RUNNER_TEMP/dist.p12
+          security import $RUNNER_TEMP/dist.p12 -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KC"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KP" "$KC" >/dev/null
+          security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles ~/Library/Developer/Xcode/UserData/Provisioning\ Profiles
+          echo "$PROFILE" | base64 --decode > $RUNNER_TEMP/app.mobileprovision
+          UUID=$(security cms -D -i $RUNNER_TEMP/app.mobileprovision | plutil -extract UUID raw -)
+          cp $RUNNER_TEMP/app.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
+          cp $RUNNER_TEMP/app.mobileprovision ~/Library/Developer/Xcode/UserData/Provisioning\ Profiles/$UUID.mobileprovision
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "$ASC_KEY_P8" | base64 --decode > ~/.appstoreconnect/private_keys/AuthKey_$ASC_KEY_ID.p8
+      - name: 앱 타깃에만 배포용 서명 설정
+        run: |
+          python3 - <<'PY'
+          import os, re
+          p = 'ios/App/App.xcodeproj/project.pbxproj'
+          s = open(p).read()
+          team, prof = os.environ['TEAM_ID'], os.environ['PROFILE_NAME']
+          # 앱 타깃 Release 설정(INFOPLIST_FILE = App/Info.plist 가 있는 블록)만 수동 서명으로 바꿈
+          def fix(m):
+              blk = m.group(0)
+              if 'INFOPLIST_FILE = App/Info.plist' not in blk or 'name = Release' not in blk:
+                  return blk
+              blk = blk.replace('CODE_SIGN_STYLE = Automatic;', 'CODE_SIGN_STYLE = Manual;')
+              add = f'\t\t\t\tDEVELOPMENT_TEAM = {team};\n\t\t\t\t"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";\n\t\t\t\tPROVISIONING_PROFILE_SPECIFIER = "{prof}";\n'
+              return blk.replace('buildSettings = {\n', 'buildSettings = {\n' + add, 1)
+          s2 = re.sub(r'\{\s*isa = XCBuildConfiguration;.*?name = (?:Debug|Release);\s*\};', fix, s, flags=re.S)
+          assert s2 != s, '서명 설정을 못 바꿈'
+          open(p, 'w').write(s2)
+          print('앱 타깃 서명 설정 완료')
+          PY
+      - name: 아카이브 (배포용 서명)
+        run: |
+          set -o pipefail
+          BUILD_NO=$(( 100 + ${{ github.run_number }} ))
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath build/App.xcarchive \
+            CURRENT_PROJECT_VERSION=$BUILD_NO \
+            archive | tail -n 80
+      - name: App Store Connect 업로드
+        run: |
+          cat > build/ExportOptions.plist <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>$TEAM_ID</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>provisioningProfiles</key><dict><key>kr.co.linkclean.luckylotto</key><string>$PROFILE_NAME</string></dict>
+            <key>uploadSymbols</key><true/>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath build/App.xcarchive -exportOptionsPlist build/ExportOptions.plist \
+            -exportPath build/export \
+            -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_$ASC_KEY_ID.p8 \
+            -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+      - name: 정리
+        if: always()
+        run: security delete-keychain $RUNNER_TEMP/build.keychain-db || true

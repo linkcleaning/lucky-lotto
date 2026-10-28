@@ -1,0 +1,28 @@
+{
+  "appId": "kr.co.linkclean.luckylotto",
+  "appName": "행운로또",
+  "webDir": "www",
+  "backgroundColor": "#090b12",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#090b12",
+    "limitsNavigationsToAppBoundDomains": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1500,
+      "launchAutoHide": false,
+      "backgroundColor": "#090b12",
+      "showSpinner": false,
+      "launchFadeOutDuration": 250
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "overlaysWebView": true,
+      "backgroundColor": "#00000000"
+    },
+    "LocalNotifications": {
+      "iconColor": "#d4af37"
+    }
+  }
+}

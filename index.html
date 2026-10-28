@@ -1406,6 +1406,19 @@
     }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+    footer p { margin: 0 0 6px; }
+    footer .fine { font-size: .66rem; line-height: 1.55; color: var(--mute); opacity: .85; max-width: 420px; margin: 6px auto 8px; }
+    .info-link { border: none; background: none; color: var(--gold); font-size: .74rem; padding: 8px 10px; min-height: 36px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+    .info-body { font-size: .86rem; color: var(--sub); line-height: 1.6; padding: 0 2px 8px; }
+    .info-body b { color: var(--ink); }
+    .info-body h4 { color: var(--gold-l); font-family: var(--f-display); font-size: .92rem; margin: 16px 0 6px; }
+    .info-body ul { margin: 0; padding-left: 18px; }
+    .info-body li + li { margin-top: 4px; }
+    .info-body p { margin: 0 0 8px; }
+    .qr-home { margin-bottom: 14px; }
+    .cam-native { display: none; margin-top: 4px; }
+    .cam.native .cam-native { display: inline-flex; }
+    .cam.native { gap: 4px; padding-bottom: 18px; }
     footer {
       text-align: center;
       font-size: .74rem;
@@ -1484,6 +1497,20 @@
       <div class="balls" id="finalBalls"></div>
       <button class="more-link" id="finalMore" type="button">지난 당첨번호 모두 보기 ›</button>
     </section>
+
+    <button class="qr-cta qr-home" id="qrCtaHome" type="button">
+      <svg viewBox="0 0 34 34" aria-hidden="true">
+        <rect x="2" y="2" width="12" height="12" rx="2" fill="none" stroke="#d4af37" stroke-width="2.4"/>
+        <rect x="6" y="6" width="4" height="4" fill="#f7e7a8"/>
+        <rect x="20" y="2" width="12" height="12" rx="2" fill="none" stroke="#d4af37" stroke-width="2.4"/>
+        <rect x="24" y="6" width="4" height="4" fill="#f7e7a8"/>
+        <rect x="2" y="20" width="12" height="12" rx="2" fill="none" stroke="#d4af37" stroke-width="2.4"/>
+        <rect x="6" y="24" width="4" height="4" fill="#f7e7a8"/>
+        <rect x="20" y="20" width="4" height="4" fill="#d4af37"/><rect x="28" y="20" width="4" height="4" fill="#d4af37"/>
+        <rect x="24" y="24" width="4" height="4" fill="#f7e7a8"/><rect x="20" y="28" width="4" height="4" fill="#d4af37"/><rect x="28" y="28" width="4" height="4" fill="#d4af37"/>
+      </svg>
+      <div><b>산 로또 QR 찍고 당첨 확인</b><span>용지 QR만 찍으면 번호 저장 · 추첨 후 자동으로 맞춰봐요</span></div>
+    </button>
 
     <section class="panel" id="inputCard">
       <div class="label-row">
@@ -1689,7 +1716,40 @@
     </section>
   </main>
 
-  <footer>모든 번호의 당첨 확률은 같아요 · 재미로 즐겨주세요 🍀</footer>
+  <footer>
+    <p>모든 번호의 당첨 확률은 같아요 · 재미로 즐겨주세요 🍀</p>
+    <p class="fine">이 앱은 동행복권·복권위원회와 관련 없는 개인이 만든 앱이며, 복권을 팔거나 구매를 대행하지 않아요. 당첨 여부는 동행복권 공식 발표로 꼭 확인하세요. 복권은 만 19세 이상만 구매할 수 있어요 · 도박 문제 상담 ☎ 1336</p>
+    <button type="button" class="info-link" id="infoBtn">앱 정보 · 개인정보처리방침</button>
+  </footer>
+
+  <div class="sheet" id="infoSheet" hidden role="dialog" aria-modal="true" aria-labelledby="infoTitle">
+    <div class="sheet-panel">
+      <div class="sheet-head">
+        <h3 id="infoTitle">앱 정보</h3>
+        <button class="x" id="infoClose" type="button">닫기</button>
+      </div>
+      <div class="info-body">
+        <p><b>행운로또</b> <span id="infoVer"></span></p>
+        <p>구매한 로또 용지 QR을 찍어 번호를 저장하고, 매주 추첨 결과와 자동으로 맞춰보는 로또 번호 관리 앱이에요. 나에게 의미 있는 숫자(가족 생일, 차량번호 등)를 넣어 번호를 뽑아볼 수도 있어요.</p>
+        <h4>꼭 알아두세요</h4>
+        <ul>
+          <li>동행복권·복권위원회와 관련 없는 개인 제작 앱이에요. 복권 판매·구매 대행·결제 기능이 없어요.</li>
+          <li>번호 추천과 오늘의 운은 재미로 보는 기능이에요. 어떤 번호든 당첨 확률은 같아요.</li>
+          <li>당첨번호는 공개된 자료를 참고하며, 당첨금 수령 전 동행복권 공식 발표를 꼭 확인하세요.</li>
+          <li>복권은 만 19세 이상만 구매할 수 있어요. 지나친 구매는 삼가 주세요. 도박 문제 상담 ☎ 1336 (한국도박문제예방치유원)</li>
+        </ul>
+        <h4>개인정보</h4>
+        <ul>
+          <li>회원가입이 없고, 어떤 개인정보도 서버로 보내거나 모으지 않아요.</li>
+          <li>입력한 숫자·생년월일·저장한 번호는 이 휴대폰 안에만 저장돼요. 저장한 번호는 줄마다 ✕로 지울 수 있고, 앱을 지우면 모두 사라져요.</li>
+          <li>카메라는 로또 용지 QR을 읽을 때만 쓰고, 사진은 저장하거나 전송하지 않아요.</li>
+          <li>알림은 저장한 번호의 추첨 결과를 알려줄 때만 휴대폰 안에서 예약돼요.</li>
+          <li>당첨번호 목록을 받을 때만 인터넷을 써요(GitHub Pages). 광고·분석 도구는 쓰지 않아요.</li>
+        </ul>
+        <a class="btn btn-line" id="privacyLink" href="https://linkcleaning.github.io/lucky-lotto/privacy.html" target="_blank" rel="noopener" style="width:100%;margin-top:6px">개인정보처리방침 전체 보기</a>
+      </div>
+    </div>
+  </div>
 
   <div class="bubble" id="bubble">눌러봐요!</div>
   <button class="mascot" id="mascot" aria-label="마스코트 다람쥐 - 누르면 1등을 외쳐요">
@@ -1707,6 +1767,7 @@
           <video id="camVideo" playsinline muted autoplay></video>
           <div class="frame"></div>
           <p class="cam-msg" id="camMsg">카메라를 켜는 중이에요</p>
+          <button class="btn btn-gold cam-native" id="camNative" type="button">📷 카메라로 QR 찍기</button>
         </div>
         <div class="row-2">
           <button class="btn btn-line" id="photoBtn" type="button">사진에서 불러오기</button>
@@ -1747,6 +1808,7 @@
       const KEY_TICKETS = 'lucky-lotto-tickets-v1';
       const KEY_MANUAL = 'lucky-lotto-manual-draws-v1';
       const DRAWS_URL = 'data/draws.json';
+      const DRAWS_REMOTE = 'https://linkcleaning.github.io/lucky-lotto/data/draws.json';
       const VOICE_FILE = 'sounds/first.mp3';
 
       // 로또 1회 추첨: 2002-12-07(토) 20:35 KST = 11:35 UTC, 이후 매주 토요일
@@ -1755,6 +1817,27 @@
       const SALES_CLOSE_BEFORE = 35 * 60e3; // 토요일 20:00 판매 마감
 
       const $ = (id) => document.getElementById(id);
+
+      /* ================= 앱(아이폰·안드로이드) 모드 =================
+         앱스토어용 앱 안에서 열리면 Capacitor 네이티브 기능을 씁니다.
+         웹(GitHub Pages)에서는 아래 기능이 모두 꺼지고 기존처럼 동작해요. */
+      const CAP = window.Capacitor;
+      const APP = !!(CAP && typeof CAP.isNativePlatform === 'function' && CAP.isNativePlatform());
+      const NP = APP ? (CAP.Plugins || {}) : {};
+      const has = (name) => APP && !!NP[name] && (typeof CAP.isPluginAvailable !== 'function' || CAP.isPluginAvailable(name));
+      if (APP) document.documentElement.classList.add('is-app');
+
+      // 진동: 앱은 아이폰 햅틱, 웹은 기존 vibrate
+      function buzz(p) {
+        if (has('Haptics')) {
+          try {
+            if (Array.isArray(p)) NP.Haptics.notification({ type: 'SUCCESS' });
+            else NP.Haptics.impact({ style: p >= 50 ? 'HEAVY' : p >= 20 ? 'MEDIUM' : 'LIGHT' });
+          } catch (e) {}
+          return;
+        }
+        if (navigator.vibrate) { try { navigator.vibrate(p); } catch (e) {} }
+      }
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
       /* ================= 저장소 (실패해도 앱은 동작) ================= */
@@ -1763,12 +1846,42 @@
           try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; }
         },
         set(key, value) {
-          try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch (e) { return false; }
+          const v = JSON.stringify(value);
+          mirror(key, v);
+          try { localStorage.setItem(key, v); return true; } catch (e) { return has('Preferences'); }
         },
         raw(key) { try { return localStorage.getItem(key) || ''; } catch (e) { return ''; } },
-        setRaw(key, v) { try { localStorage.setItem(key, v); } catch (e) {} },
-        del(key) { try { localStorage.removeItem(key); } catch (e) {} }
+        setRaw(key, v) { mirror(key, v); try { localStorage.setItem(key, v); } catch (e) {} },
+        del(key) { mirror(key, null); try { localStorage.removeItem(key); } catch (e) {} }
       };
+      // 아이폰은 저장 공간이 부족하면 웹 저장소를 지울 수 있어서, 앱에서는 기기 저장소에도 한 벌 더 보관해요
+      function mirror(key, v) {
+        if (!has('Preferences')) return;
+        try { (v == null ? NP.Preferences.remove({ key }) : NP.Preferences.set({ key, value: v })).catch(() => {}); } catch (e) {}
+      }
+      async function restoreFromDevice() {
+        if (!has('Preferences')) return false;
+        try {
+          const { keys } = await NP.Preferences.keys();
+          let restored = false;
+          for (const key of keys || []) {
+            if (!key.startsWith('lucky-lotto-')) continue;
+            let cur = null;
+            try { cur = localStorage.getItem(key); } catch (e) {}
+            if (cur != null) continue;
+            const { value } = await NP.Preferences.get({ key });
+            if (value != null) { try { localStorage.setItem(key, value); restored = true; } catch (e) {} }
+          }
+          // 처음 앱을 켰을 때 웹 저장소에만 있던 값은 기기 저장소로 옮겨 둠
+          try {
+            for (let i = 0; i < localStorage.length; i++) {
+              const k = localStorage.key(i);
+              if (k && k.startsWith('lucky-lotto-') && !(keys || []).includes(k)) mirror(k, localStorage.getItem(k));
+            }
+          } catch (e) {}
+          return restored;
+        } catch (e) { return false; }
+      }
 
       /* ================= 회차 계산 ================= */
       const roundDate = (n) => new Date(DRAW1 + (n - 1) * WEEK);       // 추첨 시각
@@ -1921,7 +2034,9 @@
       }
       async function loadDraws() {
         try {
-          const res = await fetch(DRAWS_URL, { cache: 'no-cache' });
+          let res = null;
+          if (APP) { try { res = await fetch(DRAWS_REMOTE + '?t=' + Math.floor(Date.now() / 6e5), { cache: 'no-store' }); } catch (e) { res = null; } }
+          if (!res || !res.ok) res = await fetch(DRAWS_URL, { cache: 'no-cache' });
           if (res.ok) {
             const json = await res.json();
             const next = {};
@@ -2124,10 +2239,11 @@
         if (!setTickets(list)) { toast('이 브라우저에서는 저장할 수 없어요'); return; }
         checkRound = round;
         updateTabCount();
+        scheduleDrawAlerts(true);
 
         const rows = [...gameListEl.querySelectorAll('.game')];
         idx.forEach(i => rows[i] && rows[i].classList.add('leaving'));
-        if (navigator.vibrate) navigator.vibrate(20);
+        buzz(20);
         setTimeout(() => {
           lastGames = lastGames.filter((_, i) => !idx.includes(i));
           if (lastGames.length) {
@@ -2148,7 +2264,7 @@
         if (!lastGames[gi]) return;
         const rows = [...gameListEl.querySelectorAll('.game')];
         if (rows[gi]) rows[gi].classList.add('removing');
-        if (navigator.vibrate) navigator.vibrate(15);
+        buzz(15);
         setTimeout(() => {
           lastGames = lastGames.filter((_, i) => i !== gi);
           if (lastGames.length) renderGames(lastGames, lastMine, false);
@@ -2210,7 +2326,7 @@
               anim.onfinish = () => {
                 reel.classList.remove('spinning');
                 reel.classList.add('stopped');
-                if (navigator.vibrate) navigator.vibrate(i === target.length - 1 ? 60 : 15);
+                buzz(i === target.length - 1 ? 60 : 15);
               };
               // 마지막 릴만 남으면 긴장감
               if (i === target.length - 2) {
@@ -2413,7 +2529,7 @@
         resultsEl.hidden = true;
         machineCard.hidden = false;
         machineCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        if (navigator.vibrate) navigator.vibrate([20, 40, 20]);
+        buzz([20, 40, 20]);
 
         const reveal = () => {
           machineCard.hidden = true;
@@ -2493,6 +2609,10 @@
       $('shareBtn').addEventListener('click', async () => {
         if (!lastGames.length) return;
         const text = resultText();
+        if (has('Share')) {
+          try { await NP.Share.share({ title: '행운로또', text, dialogTitle: '번호 보내기' }); return; }
+          catch (e) { if (/cancel/i.test(String(e && (e.message || e)))) return; }
+        }
         if (navigator.share) {
           try { await navigator.share({ title: '행운로또 생성기', text }); return; }
           catch (e) { if (e && e.name === 'AbortError') return; }
@@ -2514,6 +2634,41 @@
         c.textContent = `${n}줄`;
         c.hidden = n === 0;
         renderMyCard();
+        scheduleDrawAlerts(false);
+      }
+
+      /* ---------- 추첨 결과 알림 (앱 전용) ----------
+         저장한 번호가 있는 회차는 토요일 추첨이 끝난 뒤(오후 9시) 알림을 한 번 보내요.
+         권한은 번호를 처음 저장할 때만 물어봐요. */
+      let alertTimer = null;
+      function scheduleDrawAlerts(ask) {
+        if (!has('LocalNotifications')) return;
+        clearTimeout(alertTimer);
+        alertTimer = setTimeout(async () => {
+          const LN = NP.LocalNotifications;
+          try {
+            let perm = (await LN.checkPermissions()).display;
+            if (perm !== 'granted' && ask && perm !== 'denied') perm = (await LN.requestPermissions()).display;
+            const pend = await LN.getPending().catch(() => ({ notifications: [] }));
+            const old = (pend.notifications || []).map(n => ({ id: Number(n.id) }));
+            if (old.length) await LN.cancel({ notifications: old }).catch(() => {});
+            if (perm !== 'granted') return;
+            const now = Date.now();
+            const byRound = {};
+            getTickets().forEach(t => { byRound[t.round] = (byRound[t.round] || 0) + t.games.length; });
+            const list = Object.keys(byRound).map(Number)
+              .filter(r => !draws[r] && roundDate(r).getTime() + 25 * 60e3 > now)
+              .sort((a, b) => a - b).slice(0, 4)
+              .map(r => ({
+                id: r,
+                title: `${r}회 추첨이 끝났어요`,
+                body: `저장한 번호 ${byRound[r]}줄의 당첨 결과를 확인해 보세요`,
+                schedule: { at: new Date(roundDate(r).getTime() + 25 * 60e3), allowWhileIdle: true },
+                extra: { round: r }
+              }));
+            if (list.length) await LN.schedule({ notifications: list });
+          } catch (e) {}
+        }, 400);
       }
 
       // 홈 화면 '내가 저장한 번호' 요약 (최근 2개 회차)
@@ -2817,7 +2972,7 @@
         if (!jsQRPromise) {
           jsQRPromise = new Promise((ok, no) => {
             const sc = document.createElement('script');
-            sc.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
+            sc.src = 'vendor/jsQR.js';
             sc.onload = () => (window.jsQR ? ok(window.jsQR) : no(new Error('jsQR 없음')));
             sc.onerror = () => { jsQRPromise = null; no(new Error('QR 읽기 도구를 불러오지 못했어요')); };
             document.head.appendChild(sc);
@@ -2864,7 +3019,34 @@
         scanSheet.hidden = true;
         document.body.style.overflow = '';
       }
+      let nativeScanning = false;
+      async function nativeScan() {
+        if (nativeScanning) return;
+        nativeScanning = true;
+        camBox.classList.add('off', 'native');
+        camMsg.textContent = '카메라를 여는 중이에요';
+        try {
+          const res = await NP.CapacitorBarcodeScanner.scanBarcode({
+            hint: 0, // QR_CODE
+            scanInstructions: '로또 용지 오른쪽 위 QR을 네모 안에 맞춰주세요',
+            scanButton: false,
+            cameraDirection: 1,
+            scanOrientation: 1
+          });
+          const text = res && (res.ScanResult || res.scanResult);
+          if (text && handleQRText(text)) return;
+          camMsg.textContent = text ? '로또 6/45 용지 QR이 아니에요. 아래 버튼으로 다시 찍어주세요' : 'QR을 읽지 못했어요. 다시 찍어주세요';
+        } catch (e) {
+          const m = String(e && (e.message || e) || '');
+          camMsg.textContent = /cancel/i.test(m) ? '아래 버튼을 누르면 카메라가 다시 열려요'
+            : /permission|denied|권한/i.test(m) ? '카메라 권한이 꺼져 있어요. 설정 › 행운로또 › 카메라를 켜거나, 사진에서 불러오기를 써주세요'
+            : 'QR을 읽지 못했어요. 다시 찍거나 사진에서 불러와 주세요';
+        } finally {
+          nativeScanning = false;
+        }
+      }
       async function startCamera() {
+        if (has('CapacitorBarcodeScanner')) return nativeScan();
         camBox.classList.remove('off');
         camMsg.textContent = '카메라를 켜는 중이에요';
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return cameraOff();
@@ -2923,12 +3105,12 @@
           if (Date.now() - lastBadAt > 1500) {
             lastBadAt = Date.now();
             toast('로또 6/45 용지 QR이 아니에요');
-            if (navigator.vibrate) navigator.vibrate(60);
+            buzz(60);
           }
           return false;
         }
         stopCamera();
-        if (navigator.vibrate) navigator.vibrate([30, 40, 30]);
+        buzz([30, 40, 30]);
         showQRResult(t);
         return true;
       }
@@ -2988,7 +3170,7 @@
         });
         if (draw && t.games.some(x => rankOf(x, draw))) {
           setTimeout(() => confetti(window.innerWidth / 2, window.innerHeight * 0.35, 70), 150);
-          if (navigator.vibrate) navigator.vibrate([60, 40, 120]);
+          buzz([60, 40, 120]);
         }
         $('qrAgain').addEventListener('click', () => { $('qrResult').hidden = true; $('scanStage').hidden = false; startCamera(); });
         $('qrSave').addEventListener('click', () => {
@@ -2997,6 +3179,7 @@
           if (!setTickets(list)) { toast('이 브라우저에서는 저장할 수 없어요'); return; }
           closeScanner();
           updateTabCount();
+          scheduleDrawAlerts(true);
           checkRound = t.round;
           showTab('check');
           toast(draw ? `${t.round}회 결과를 저장했어요` : `${t.round}회 ${t.games.length}게임을 저장했어요 · 추첨 후 자동 확인`);
@@ -3047,6 +3230,20 @@
       });
 
       $('qrCta').addEventListener('click', openScanner);
+      $('qrCtaHome').addEventListener('click', openScanner);
+      const infoSheet = $('infoSheet');
+      const closeInfo = () => { infoSheet.hidden = true; document.body.style.overflow = ''; };
+      $('infoBtn').addEventListener('click', () => { infoSheet.hidden = false; document.body.style.overflow = 'hidden'; });
+      $('infoClose').addEventListener('click', closeInfo);
+      infoSheet.addEventListener('click', (e) => { if (e.target === infoSheet) closeInfo(); });
+      if (has('App')) NP.App.getInfo().then(i => { $('infoVer').textContent = `버전 ${i.version} (${i.build})`; }).catch(() => {});
+      if (APP) {
+        // 앱 안에서는 개인정보처리방침을 시스템 브라우저로 열기
+        $('privacyLink').addEventListener('click', (e) => {
+          if (has('Browser')) { e.preventDefault(); NP.Browser.open({ url: e.currentTarget.href }).catch(() => {}); }
+        });
+      }
+      $('camNative').addEventListener('click', () => nativeScan());
       $('scanClose').addEventListener('click', closeScanner);
       scanSheet.addEventListener('click', (e) => { if (e.target === scanSheet) closeScanner(); });
       document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !scanSheet.hidden) closeScanner(); });
@@ -3316,7 +3513,7 @@
         $('luckSetup').hidden = !editingBirth;
         $('luckSetup').classList.toggle('editing', editingBirth);
         $('birthEdit').textContent = editingBirth ? '닫기' : '생일 바꾸기';
-        $('luckSetupHint').textContent = editingBirth ? '새 생년월일을 넣고 확인을 누르세요.' : '먼저 생년월일을 넣어주세요. 오늘 로또를 구매해도 좋은 날인지, 몇 시가 좋은지 알려드려요.';
+        $('luckSetupHint').textContent = editingBirth ? '새 생년월일을 넣고 확인을 누르세요.' : (APP ? '생년월일을 넣으면 띠와 오늘의 기운으로 재미있는 하루 운을 알려드려요.' : '먼저 생년월일을 넣어주세요. 오늘 로또를 구매해도 좋은 날인지, 몇 시가 좋은지 알려드려요.');
         $('luckResult').hidden = false;
         const L = luckToday(b);
         const tier = L.score >= 80 ? 'best' : L.score >= 60 ? 'good' : L.score >= 40 ? 'mid' : 'bad';
@@ -3325,10 +3522,10 @@
         requestAnimationFrame(() => { $('luckBar').style.strokeDashoffset = String(314.16 * (1 - L.score / 100)); });
 
         const VERDICT = {
-          best: ['오늘 꼭 구매하세요!', '띠와 오늘 기운이 잘 맞는 날이에요. 좋은 시간에 맞춰 구매해 보세요.'],
-          good: ['구매하세요', '좋은 흐름이에요. 좋은 시간에 구매하면 더 좋아요.'],
-          mid:  ['1~2게임만 구매하세요', '보통인 날이에요. 소액으로 가볍게 즐기세요.'],
-          bad:  ['오늘은 구매하지 마세요', '기운이 엇갈리는 날이에요. 다음 좋은 날을 기다려요.']
+          best: APP ? ['행운 가득한 날!', '띠와 오늘 기운이 잘 맞는 날이에요. 좋은 시간에 즐겨 보세요.'] : ['오늘 꼭 구매하세요!', '띠와 오늘 기운이 잘 맞는 날이에요. 좋은 시간에 맞춰 구매해 보세요.'],
+          good: APP ? ['좋은 흐름이에요', '기분 좋은 하루예요. 좋은 시간을 참고해 보세요.'] : ['구매하세요', '좋은 흐름이에요. 좋은 시간에 구매하면 더 좋아요.'],
+          mid:  APP ? ['무난한 날', '보통인 날이에요. 가볍게 재미로만 즐기세요.'] : ['1~2게임만 구매하세요', '보통인 날이에요. 소액으로 가볍게 즐기세요.'],
+          bad:  APP ? ['쉬어가는 날', '기운이 엇갈리는 날이에요. 오늘은 쉬어가요.'] : ['오늘은 구매하지 마세요', '기운이 엇갈리는 날이에요. 다음 좋은 날을 기다려요.']
         };
         $('luckVerdict').textContent = VERDICT[tier][0];
         let msg = VERDICT[tier][1];
@@ -3356,7 +3553,8 @@
       }
 
       const tierOf = (sc) => sc >= 80 ? 'best' : sc >= 60 ? 'good' : sc >= 40 ? 'mid' : 'bad';
-      const SHORT_VERDICT = { best: '꼭 구매하세요', good: '구매하세요', mid: '1~2게임만 구매', bad: '구매하지 마세요' };
+      const SHORT_VERDICT = APP ? { best: '행운 가득', good: '좋은 흐름', mid: '무난한 날', bad: '쉬어가는 날' }
+        : { best: '꼭 구매하세요', good: '구매하세요', mid: '1~2게임만 구매', bad: '구매하지 마세요' };
       const DOW = '일월화수목금토';
 
       // 이번 주 월~토 (일요일이면 다가오는 월~토)
@@ -3435,7 +3633,9 @@
           return;
         }
         const when = top.isToday ? '오늘' : `${DOW[top.dow]}요일(${top.m}.${top.d})`;
-        const slotTxt = top.goodSlot ? `${when} <b>${hourLabel(top.goodSlot.start)} ~ ${hourLabel(top.goodSlot.end)}</b>에 구매하세요` : `${when}에 구매하세요`;
+        const slotTxt = APP
+          ? (top.goodSlot ? `${when} <b>${hourLabel(top.goodSlot.start)} ~ ${hourLabel(top.goodSlot.end)}</b>이 가장 좋아요` : `${when}이 가장 좋아요`)
+          : (top.goodSlot ? `${when} <b>${hourLabel(top.goodSlot.start)} ~ ${hourLabel(top.goodSlot.end)}</b>에 구매하세요` : `${when}에 구매하세요`);
         pick.innerHTML = `<div class="wp-label">이번 주 가장 좋은 날</div>
           <div class="wp-day">${when} <b>${top.L.score}%</b></div>
           <div class="wp-time">${slotTxt}</div>
@@ -3570,7 +3770,7 @@
         bubble.classList.add('show', 'big');
         shoutFirst();
         setTimeout(fanfare, voiceAudio ? 650 : 0);
-        if (navigator.vibrate) navigator.vibrate([40, 30, 80]);
+        buzz([40, 30, 80]);
         const r = mascot.getBoundingClientRect();
         confetti(r.left + r.width / 2, r.top + 20, 46, 0.9);
         clearTimeout(cheerTimer);
@@ -3587,6 +3787,27 @@
       renderNums();
       restoreLast();
       updateBuyMeta();
+      if (APP) {
+        document.querySelector('header.top h1').textContent = '행운로또';
+        document.querySelector('header.top > p').textContent = '산 로또는 QR로 저장해 당첨을 자동 확인하고, 나만의 숫자로 번호도 뽑아보세요';
+        $('shareBtn').textContent = '💬 이 번호 카톡·문자로 보내기';
+        const le = document.querySelector('#luckCard .eyebrow'); if (le) le.textContent = 'JUST FOR FUN';
+        const lh = document.querySelector('#luckCard h2'); if (lh) lh.textContent = '재미로 보는 오늘의 운';
+        const rule = document.querySelector('.luck-rule'); if (rule) rule.innerHTML = '재미로만 참고하세요 · 복권은 <b>만 19세 이상</b>, 적당히 즐겨요';
+        const sh = $('luckSetupHint'); if (sh) sh.textContent = '생년월일을 넣으면 띠와 오늘의 기운으로 재미있는 하루 운을 알려드려요.';
+        if (has('LocalNotifications')) {
+          NP.LocalNotifications.addListener('localNotificationActionPerformed', (ev) => {
+            const r = ev && ev.notification && ev.notification.extra && Number(ev.notification.extra.round);
+            if (r) checkRound = r;
+            loadDraws();
+            showTab('check');
+          });
+        }
+        if (has('App')) NP.App.addListener('appStateChange', (st) => { if (st.isActive) { updateBuyMeta(); renderLuck(); loadDraws(); } });
+        // 웹 저장소가 비어 있으면 기기 저장소에서 되살린 뒤 한 번 새로 그리기
+        restoreFromDevice().then((restored) => { if (restored) location.reload(); });
+        if (has('SplashScreen')) setTimeout(() => NP.SplashScreen.hide().catch(() => {}), 150);
+      }
       renderLuck();
       updateTabCount();
       mergeDraws();
@@ -3597,7 +3818,17 @@
         if (document.visibilityState === 'visible') { updateBuyMeta(); renderLuck(); loadDraws(); }
       });
 
-      if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+      // 스토어 스크린샷 자동 촬영용 (빌드할 때 SHOTS=1 일 때만 연결됨, 평소에는 아무 일도 안 함)
+      if (window.__LL_SHOT) {
+        window.__ll = {
+          showTab,
+          setCheckRound: (r) => { checkRound = r; },
+          showQR: (t) => { scanSheet.hidden = false; document.body.style.overflow = 'hidden'; showQRResult(t); },
+          closeScanner
+        };
+      }
+
+      if (!APP && 'serviceWorker' in navigator && location.protocol !== 'file:') {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW 등록 실패:', err));
         });
