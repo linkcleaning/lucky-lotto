@@ -73,12 +73,17 @@ jobs:
           xcrun simctl install "$UDID" "$APP"
           xcrun simctl privacy "$UDID" grant notifications kr.co.linkclean.luckylotto || true
           sleep 3
-          xcrun simctl launch "$UDID" kr.co.linkclean.luckylotto
           mkdir -p shots
-          START=$(date +%s)
+          BID=kr.co.linkclean.luckylotto
+          # 첫 실행: 예시 데이터 넣기
+          xcrun simctl spawn "$UDID" defaults write $BID CapacitorStorage.shot -string 1
+          xcrun simctl launch "$UDID" $BID; sleep 15
           for k in 1 2 3 4 5 6 7; do
-            T=$((10 + 7 * (k - 1)))
-            while [ $(( $(date +%s) - START )) -lt $T ]; do sleep 0.3; done
+            xcrun simctl terminate "$UDID" $BID || true
+            sleep 1
+            xcrun simctl spawn "$UDID" defaults write $BID CapacitorStorage.shot -string $k
+            xcrun simctl launch "$UDID" $BID
+            if [ $k = 2 ]; then sleep 16; else sleep 10; fi
             xcrun simctl io "$UDID" screenshot --type=png "shots/ios-$k.png"
           done
           ls -la shots
