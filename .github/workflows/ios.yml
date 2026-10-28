@@ -30,6 +30,8 @@ jobs:
   simulator:
     name: 시뮬레이터 빌드 + 스크린샷
     runs-on: macos-26
+    permissions:
+      contents: write
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
@@ -59,7 +61,7 @@ jobs:
           set -o pipefail
           xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug \
             -destination "id=${{ steps.sim.outputs.udid }}" -derivedDataPath build \
-            CODE_SIGNING_ALLOWED=NO build | tail -n 60
+            CODE_SIGNING_ALLOWED=NO build 2>&1 | tee build-sim.log | tail -n 60
       - name: 실행하고 화면 찍기
         run: |
           UDID=${{ steps.sim.outputs.udid }}
@@ -80,22 +82,34 @@ jobs:
             xcrun simctl io "$UDID" screenshot --type=png "shots/ios-$k.png"
           done
           ls -la shots
+          cp build-sim.log shots/ 2>/dev/null || true
       - uses: actions/upload-artifact@v4
         with:
           name: ios-screenshots
           path: shots/
+      - name: 스크린샷을 ios-shots 브랜치에 보관
+        if: github.ref == 'refs/heads/main'
+        run: |
+          cd shots
+          git init -q -b ios-shots
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add . && git commit -qm "iOS 시뮬레이터 화면 ${{ github.sha }}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ios-shots
 
   testflight:
     name: TestFlight 업로드
     if: github.event_name == 'workflow_dispatch' && inputs.upload
     needs: simulator
     runs-on: macos-26
+    permissions:
+      contents: write
     timeout-minutes: 60
     env:
-      TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
       ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-      PROFILE_NAME: ${{ secrets.IOS_PROFILE_NAME }}
+      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+      SIGN_OUT: ${{ github.workspace }}/signing
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -105,29 +119,29 @@ jobs:
       - run: npm ci
       - name: 앱 웹 파일 준비
         run: node scripts/build-www.mjs && npx cap sync ios
+      - name: 배포 서명 만들기 (App Store Connect API)
+        run: |
+          python3 -m pip install --quiet --break-system-packages pyjwt cryptography requests || python3 -m pip install --quiet pyjwt cryptography requests
+          set -o pipefail
+          python3 scripts/asc_signing.py 2>&1 | tee -a "$RUNNER_TEMP/tf.log"
       - name: 인증서·프로필·API 키 설치
-        env:
-          P12: ${{ secrets.IOS_DIST_P12 }}
-          P12_PASSWORD: ${{ secrets.IOS_DIST_P12_PASSWORD }}
-          PROFILE: ${{ secrets.IOS_PROFILE }}
-          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
         run: |
           KC=$RUNNER_TEMP/build.keychain-db
           KP=$(openssl rand -hex 16)
           security create-keychain -p "$KP" "$KC"
           security set-keychain-settings -lut 21600 "$KC"
           security unlock-keychain -p "$KP" "$KC"
-          echo "$P12" | base64 --decode > $RUNNER_TEMP/dist.p12
-          security import $RUNNER_TEMP/dist.p12 -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KC"
+          security import "$SIGN_OUT/dist.p12" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KC"
           security set-key-partition-list -S apple-tool:,apple: -k "$KP" "$KC" >/dev/null
           security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
-          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles ~/Library/Developer/Xcode/UserData/Provisioning\ Profiles
-          echo "$PROFILE" | base64 --decode > $RUNNER_TEMP/app.mobileprovision
-          UUID=$(security cms -D -i $RUNNER_TEMP/app.mobileprovision | plutil -extract UUID raw -)
-          cp $RUNNER_TEMP/app.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
-          cp $RUNNER_TEMP/app.mobileprovision ~/Library/Developer/Xcode/UserData/Provisioning\ Profiles/$UUID.mobileprovision
+          security find-identity -v -p codesigning "$KC"
+          UUID=$(security cms -D -i "$SIGN_OUT/app.mobileprovision" | plutil -extract UUID raw -)
+          for d in ~/Library/MobileDevice/Provisioning\ Profiles ~/Library/Developer/Xcode/UserData/Provisioning\ Profiles; do
+            mkdir -p "$d"; cp "$SIGN_OUT/app.mobileprovision" "$d/$UUID.mobileprovision"
+          done
           mkdir -p ~/.appstoreconnect/private_keys
-          echo "$ASC_KEY_P8" | base64 --decode > ~/.appstoreconnect/private_keys/AuthKey_$ASC_KEY_ID.p8
+          KEYF=~/.appstoreconnect/private_keys/AuthKey_$ASC_KEY_ID.p8
+          if echo "$ASC_KEY_P8" | grep -q "BEGIN PRIVATE KEY"; then printf '%s\n' "$ASC_KEY_P8" > "$KEYF"; else echo "$ASC_KEY_P8" | base64 --decode > "$KEYF"; fi
       - name: 앱 타깃에만 배포용 서명 설정
         run: |
           python3 - <<'PY'
@@ -152,12 +166,14 @@ jobs:
         run: |
           set -o pipefail
           BUILD_NO=$(( 100 + ${{ github.run_number }} ))
+          echo "빌드 번호: $BUILD_NO"
           xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
             -destination 'generic/platform=iOS' -archivePath build/App.xcarchive \
             CURRENT_PROJECT_VERSION=$BUILD_NO \
-            archive | tail -n 80
+            archive 2>&1 | tee "$RUNNER_TEMP/archive.log" | tail -n 80
       - name: App Store Connect 업로드
         run: |
+          set -o pipefail
           cat > build/ExportOptions.plist <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -166,6 +182,7 @@ jobs:
             <key>destination</key><string>upload</string>
             <key>teamID</key><string>$TEAM_ID</string>
             <key>signingStyle</key><string>manual</string>
+            <key>signingCertificate</key><string>Apple Distribution</string>
             <key>provisioningProfiles</key><dict><key>kr.co.linkclean.luckylotto</key><string>$PROFILE_NAME</string></dict>
             <key>uploadSymbols</key><true/>
             <key>manageAppVersionAndBuildNumber</key><false/>
@@ -174,7 +191,33 @@ jobs:
           xcodebuild -exportArchive -archivePath build/App.xcarchive -exportOptionsPlist build/ExportOptions.plist \
             -exportPath build/export \
             -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_$ASC_KEY_ID.p8 \
-            -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+            -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID" 2>&1 | tee -a "$RUNNER_TEMP/tf.log"
+      - name: 새 인증서면 암호화된 보관본 저장
+        if: env.NEW_CERT == '1'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          cp ios/signing/dist.p12.enc "$RUNNER_TEMP/vault"
+          git fetch origin main && git reset --hard origin/main
+          mkdir -p ios/signing && cp "$RUNNER_TEMP/vault" ios/signing/dist.p12.enc
+          git add ios/signing/dist.p12.enc
+          git commit -m "iOS 배포 인증서 보관본 저장 (암호화) [skip ci]"
+          git push origin HEAD:main
+      - name: 기록을 ios-logs 브랜치에 보관 (문제 확인용)
+        if: always()
+        run: |
+          mkdir -p "$RUNNER_TEMP/logs" && cd "$RUNNER_TEMP/logs"
+          cp "$RUNNER_TEMP/tf.log" . 2>/dev/null || true
+          [ -f "$RUNNER_TEMP/archive.log" ] && grep -E "error|warning: .*sign|BUILD|ARCHIVE|Signing|Provision" "$RUNNER_TEMP/archive.log" | tail -n 300 > archive-summary.log || true
+          [ -f "$RUNNER_TEMP/archive.log" ] && tail -n 400 "$RUNNER_TEMP/archive.log" > archive-tail.log || true
+          echo "${{ job.status }} ${{ github.sha }} run ${{ github.run_number }}" > status.txt
+          git init -q -b ios-logs
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add . && git commit -qm "TestFlight 기록 run ${{ github.run_number }}" || true
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ios-logs || true
       - name: 정리
         if: always()
-        run: security delete-keychain $RUNNER_TEMP/build.keychain-db || true
+        run: |
+          security delete-keychain $RUNNER_TEMP/build.keychain-db || true
+          rm -rf "$SIGN_OUT" ~/.appstoreconnect

@@ -8,3 +8,4 @@ ios/DerivedData/
 android/
 *.p8
 .DS_Store
+.asc-out/
