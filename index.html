@@ -1416,6 +1416,8 @@
     .info-body li + li { margin-top: 4px; }
     .info-body p { margin: 0 0 8px; }
     .qr-home { margin-bottom: 14px; }
+    /* 앱: 스크롤할 때 내용이 상단 상태바(시계·배터리) 밑으로 비치지 않게 가림 */
+    html.is-app body::before { content: ''; position: fixed; left: 0; right: 0; top: 0; height: env(safe-area-inset-top); background: linear-gradient(180deg, rgba(9, 11, 18, .98), rgba(9, 11, 18, .9)); z-index: 60; pointer-events: none; }
     .cam-native { display: none; margin-top: 4px; }
     .cam.native .cam-native { display: inline-flex; }
     .cam.native { gap: 4px; padding-bottom: 18px; }
