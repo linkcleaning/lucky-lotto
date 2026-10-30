@@ -2331,7 +2331,7 @@
           slot.classList.remove('win', 'shake');
           reelsEl.innerHTML = '';
           text.innerHTML = '두근두근<span class="dots"></span>';
-          const base = isRetry ? 1300 : 1700, step = isRetry ? 300 : 380, suspense = isRetry ? 700 : 1000;
+          const base = isRetry ? 1800 : 2300, step = isRetry ? 380 : 480, suspense = isRetry ? 900 : 1300;
           const stops = target.map((_, i) => base + i * step + (i === target.length - 1 ? suspense : 0));
           const total = stops[stops.length - 1];
 
@@ -2340,7 +2340,7 @@
             reel.className = 'reel spinning';
             const strip = document.createElement('div');
             strip.className = 'strip';
-            const count = 9 + i * 2 + (i === target.length - 1 ? 4 : 0);   // 그림 수를 줄여 과일이 보이는 속도로
+            const count = 8 + i * 2 + (i === target.length - 1 ? 3 : 0);   // 그림 수를 줄여 과일이 보이는 속도로
             for (let k = 0; k < count; k++) {
               const cell = document.createElement('div');
               cell.className = 'cell';
