@@ -514,7 +514,7 @@
     .reel .strip { will-change: transform; }
     .reel .cell { height: var(--cell); display: grid; place-items: center; }
     .reel .cell .ball { width: 84%; height: auto; max-width: 42px; aspect-ratio: 1 / 1; font-size: clamp(.7rem, 3.6vw, .95rem); }
-    .reel.spinning .strip { filter: blur(1.2px); }
+    .reel.spinning .strip { filter: blur(.35px); }
     .reel .sym { display: grid; place-items: center; width: 86%; max-width: 44px; aspect-ratio: 1 / 1; line-height: 1; user-select: none; }
     .reel .sym.fruit { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; font-size: clamp(1.25rem, 6.4vw, 1.7rem); filter: drop-shadow(0 2px 1px rgba(0, 0, 0, .35)); }
     .reel .sym7 {
@@ -2331,7 +2331,7 @@
           slot.classList.remove('win', 'shake');
           reelsEl.innerHTML = '';
           text.innerHTML = '두근두근<span class="dots"></span>';
-          const base = isRetry ? 650 : 950, step = isRetry ? 170 : 260, suspense = isRetry ? 380 : 750;
+          const base = isRetry ? 1300 : 1700, step = isRetry ? 300 : 380, suspense = isRetry ? 700 : 1000;
           const stops = target.map((_, i) => base + i * step + (i === target.length - 1 ? suspense : 0));
           const total = stops[stops.length - 1];
 
@@ -2340,7 +2340,7 @@
             reel.className = 'reel spinning';
             const strip = document.createElement('div');
             strip.className = 'strip';
-            const count = 16 + i * 5 + (i === target.length - 1 ? 8 : 0);
+            const count = 9 + i * 2 + (i === target.length - 1 ? 4 : 0);   // 그림 수를 줄여 과일이 보이는 속도로
             for (let k = 0; k < count; k++) {
               const cell = document.createElement('div');
               cell.className = 'cell';
@@ -2374,7 +2374,7 @@
                 { transform: 'translateY(0)' },
                 { transform: `translateY(${end - cellH * 0.18}px)`, offset: 0.93 },
                 { transform: `translateY(${end}px)` }
-              ], { duration: stops[i], easing: 'cubic-bezier(.15,.55,.25,1)', fill: 'forwards' });
+              ], { duration: stops[i], easing: 'cubic-bezier(.3,.15,.3,1)', fill: 'forwards' });
               anim.onfinish = () => {
                 reel.classList.remove('spinning');
                 reel.classList.add('stopped');
