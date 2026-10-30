@@ -2387,9 +2387,11 @@
             });
           });
 
-          sfx.reelTicks(total);
-          stops.forEach((ms, i) => sfx.reelStop(ms, i === stops.length - 1));
-          sfx.jackpot(total + 120);
+          sfx.whenReady(() => {
+            sfx.reelTicks(total);
+            stops.forEach((ms, i) => sfx.reelStop(ms, i === stops.length - 1));
+            sfx.jackpot(total + 120);
+          });
 
           setTimeout(() => {
             slot.classList.add('win');
@@ -2417,9 +2419,37 @@
         function get() {
           const AC = window.AudioContext || window.webkitAudioContext;
           if (!AC) return null;
+          // 아이폰은 다른 소리(마스코트 음성·전화·잠금 등) 뒤에 소리 장치가 'interrupted'로 멈춰 버려서 새로 만듦
+          if (ctx && (ctx.state === 'closed' || ctx.state === 'interrupted')) {
+            try { ctx.close(); } catch (e) {}
+            ctx = null; noiseBuf = null;
+          }
           if (!ctx) { try { ctx = new AC(); } catch (e) { return null; } }
-          if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+          if (ctx.state !== 'running') ctx.resume().catch(() => {});
           return ctx;
+        }
+        // 버튼을 누른 순간(사용자 터치 안에서) 소리 장치를 깨움: 아이폰은 무음 버퍼를 한 번 틀어야 확실히 열려요
+        function unlock() {
+          const c = get();
+          if (!c) return null;
+          try {
+            const b = c.createBuffer(1, 1, 22050);
+            const src = c.createBufferSource();
+            src.buffer = b;
+            src.connect(c.destination);
+            src.start(0);
+          } catch (e) {}
+          return c;
+        }
+        // 소리 장치가 실제로 켜진 뒤에 예약 (멈춘 상태에서 예약하면 소리가 안 나는 경우 방지)
+        function whenReady(fn) {
+          const c = get();
+          if (!c) return;
+          if (c.state === 'running') { fn(); return; }
+          let done = false;
+          const go = () => { if (!done) { done = true; fn(); } };
+          c.resume().then(go).catch(go);
+          setTimeout(go, 350);
         }
         function noise(c) {
           if (noiseBuf) return noiseBuf;
@@ -2564,10 +2594,11 @@
             o.stop(t + 0.55);
           });
         }
-        return { get, tumble, drop, reelTicks, reelStop, jackpot };
+        return { get, unlock, whenReady, tumble, drop, reelTicks, reelStop, jackpot };
       })();
 
       function run(isRetry) {
+        sfx.unlock();   // 어느 버튼으로 뽑든 누른 순간 소리 장치를 깨움
         if (busy) return;
         busy = true;
         syncDock();
@@ -3778,7 +3809,7 @@
       let audioCtx = null;
       function fanfare() {
         try {
-          audioCtx = audioCtx || sfx.get();
+          audioCtx = sfx.get();
           if (!audioCtx) return;
           const now = audioCtx.currentTime;
           [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
