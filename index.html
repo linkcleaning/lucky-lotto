@@ -515,6 +515,42 @@
     .reel .cell { height: var(--cell); display: grid; place-items: center; }
     .reel .cell .ball { width: 84%; height: auto; max-width: 42px; aspect-ratio: 1 / 1; font-size: clamp(.7rem, 3.6vw, .95rem); }
     .reel.spinning .strip { filter: blur(1.2px); }
+    .reel .sym { display: grid; place-items: center; width: 86%; max-width: 44px; aspect-ratio: 1 / 1; line-height: 1; user-select: none; }
+    .reel .sym.fruit { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; font-size: clamp(1.25rem, 6.4vw, 1.7rem); filter: drop-shadow(0 2px 1px rgba(0, 0, 0, .35)); }
+    .reel .sym7 {
+      font-family: var(--f-num); font-weight: 900; font-style: italic;
+      font-size: clamp(1.6rem, 8.4vw, 2.2rem);
+      color: #e8141c;
+      -webkit-text-stroke: 1.5px #7a0006;
+      text-shadow: 0 0 0 #ffd75e, 1px 1px 0 #ffd75e, -1px -1px 0 #ffd75e, 1px -1px 0 #ffd75e, -1px 1px 0 #ffd75e, 0 3px 4px rgba(0, 0, 0, .45);
+    }
+    .reel .symbar i {
+      font-style: normal; font-family: var(--f-num); font-weight: 900;
+      font-size: clamp(.55rem, 2.9vw, .78rem); letter-spacing: .04em;
+      color: #fff; background: #141414; border: 2px solid #ffd75e; border-radius: 4px;
+      padding: 2px 4px; box-shadow: 0 2px 3px rgba(0, 0, 0, .45);
+    }
+    .slot-title { display: flex; align-items: center; justify-content: center; gap: 4px; }
+    .slot-title span { padding: 0 4px; }
+    .slot-title .t7 {
+      display: inline-grid; place-items: center; width: 1.45em; height: 1.45em;
+      font-family: var(--f-num); font-weight: 900; font-style: italic; font-size: 1.15rem; letter-spacing: 0;
+      color: #ff2a2a; background: radial-gradient(circle at 50% 35%, #fff8d8, #ffd75e 70%);
+      border-radius: 6px; border: 2px solid #b37400;
+      text-shadow: none; -webkit-text-stroke: .6px #7a0006;
+      box-shadow: 0 0 8px rgba(255, 184, 0, .7);
+      animation: t7 1.2s ease-in-out infinite;
+    }
+    .slot-title .t7:nth-of-type(2) { animation-delay: .2s; }
+    .slot-title .t7:nth-of-type(3) { animation-delay: .4s; }
+    @keyframes t7 { 50% { box-shadow: 0 0 16px rgba(255, 184, 0, 1); transform: translateY(-1px); } }
+    .lever { position: absolute; right: -11px; top: 30%; width: 8px; height: 40%; pointer-events: none; }
+    .lever::before { content: ""; position: absolute; left: 1px; right: 1px; top: 0; bottom: 0; border-radius: 4px; background: linear-gradient(90deg, #8c8c96, #f1f1f4 45%, #8c8c96); transform-origin: 50% 100%; }
+    .lever i { position: absolute; left: 50%; top: -10px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ff9d9d, #e0141c 55%, #7a0006); box-shadow: 0 2px 4px rgba(0, 0, 0, .5); }
+    .lever.pull::before { animation: leverStick .6s ease-in-out; }
+    .lever.pull i { animation: leverKnob .6s ease-in-out; }
+    @keyframes leverStick { 40% { transform: scaleY(.3); } }
+    @keyframes leverKnob { 40% { transform: translateY(32px); } }
     .reel.stopped { animation: reelHit .45s ease-out; }
     @keyframes reelHit { 0% { box-shadow: 0 0 0 0 rgba(255, 215, 94, 0); } 30% { box-shadow: 0 0 0 2px #ffd75e, 0 0 16px #ffb800; } 100% { box-shadow: 0 0 0 0 rgba(255, 215, 94, 0); } }
     .slot.win .reel { box-shadow: 0 0 0 2px #ffd75e, 0 0 14px #ffb800; }
@@ -1553,7 +1589,8 @@
     <section class="panel machine-wrap" id="machineCard" hidden aria-live="polite">
       <div class="slot" id="slot">
         <div class="bulbs" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-        <div class="slot-title">LUCKY <b>7</b> JACKPOT</div>
+        <span class="lever" aria-hidden="true"><i></i></span>
+        <div class="slot-title"><span>LUCKY</span><b class="t7">7</b><b class="t7">7</b><b class="t7">7</b><span>JACKPOT</span></div>
         <div class="slot-window">
           <span class="pay-arrow l" aria-hidden="true"></span>
           <div class="slot-reels" id="slotReels"></div>
@@ -2278,6 +2315,16 @@
       }
 
       /* ---------- 슬롯머신: 릴 6개가 돌다가 A게임 번호에서 하나씩 멈춤 ---------- */
+      // 진짜 슬롯머신 그림: 과일·종·BAR·7 (돌아가는 동안 보이고, 멈추면 로또 번호 공이 나와요)
+      const SLOT_SYMBOLS = ['🍒', '🍋', '🍊', '🍉', '🍇', '🔔', 'BAR', '7', '🍒', '7', '🍋', 'BAR', '🍇', '7'];
+      function slotSymbol(force) {
+        const v = force || SLOT_SYMBOLS[Math.floor(rand() * SLOT_SYMBOLS.length)];
+        const el = document.createElement('span');
+        if (v === '7') { el.className = 'sym sym7'; el.textContent = '7'; }
+        else if (v === 'BAR') { el.className = 'sym symbar'; el.innerHTML = '<i>BAR</i>'; }
+        else { el.className = 'sym fruit'; el.textContent = v; }
+        return el;
+      }
       function spinSlot(target, mine, isRetry) {
         return new Promise((resolve) => {
           const reelsEl = $('slotReels'), slot = $('slot'), text = $('slotText');
@@ -2297,7 +2344,7 @@
             for (let k = 0; k < count; k++) {
               const cell = document.createElement('div');
               cell.className = 'cell';
-              cell.appendChild(ballEl(1 + Math.floor(rand() * MAX)));
+              cell.appendChild(slotSymbol(k === count - 1 ? '7' : null));   // 멈추기 직전엔 7이 스쳐 지나가게
               strip.appendChild(cell);
             }
             const last = document.createElement('div');
@@ -2317,6 +2364,8 @@
           });
 
           slot.classList.add('shake');   // 레버 당긴 느낌
+          const lever = slot.querySelector('.lever');
+          if (lever) { lever.classList.remove('pull'); void lever.offsetWidth; lever.classList.add('pull'); }
           requestAnimationFrame(() => {
             const cellH = reels[0].reel.getBoundingClientRect().height || 58;
             reels.forEach(({ reel, strip, count }, i) => {

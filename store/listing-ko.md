@@ -67,7 +67,8 @@
 - "데이터를 수집하나요?" → **아니요, 이 앱에서 데이터를 수집하지 않습니다**
 
 ## 연령 등급
-- 모든 문항 "없음/아니요" (도박·모의 도박 없음, 사용자 콘텐츠 없음, 웹 브라우징 없음)
+- "모의 도박(Simulated Gambling)" → **드물게/약하게(Infrequent/Mild)** 로 답하기 (번호 뽑을 때 슬롯머신 모양 연출이 있어서 정직하게 표시)
+- 나머지 문항은 모두 "없음/아니요" (실제 돈 도박 없음, 사용자 콘텐츠 없음, 웹 브라우징 없음)
 - 연령 등급 덮어쓰기(Age Rating Override) → **18+** 선택 권장 (복권 관련 내용이라 국내 구매 연령에 맞춤)
 
 ## 수출 규정
@@ -87,7 +88,7 @@ Core features (native):
 2. Automatic result check per round: each line shows how many numbers matched and the prize rank; a summary table shows ranks 1–5.
 3. Local notification after the Saturday draw for rounds the user has saved (scheduled on-device, no server).
 4. Past winning numbers list (public data, downloaded as a static JSON file).
-5. Optional number generator weighted by numbers meaningful to the user (birthdays, car plate), with haptics and native share sheet.
+5. Optional number generator weighted by numbers meaningful to the user (birthdays, car plate), with haptics and native share sheet. The slot-machine style reel animation is purely decorative: there are no coins, bets, credits, payouts or rewards of any kind — the reels simply stop on the generated lottery numbers.
 6. "Just for fun" daily luck card – clearly labeled as entertainment; the app states that every number has the same odds.
 
 How to test without a real ticket:
