@@ -345,7 +345,9 @@
       white-space: nowrap;
     }
 
-    /* ================= 3D 로또볼 ================= */
+    /* ================= 3D 로또볼 =================
+       구조: .ball(구슬 몸통·빛은 고정) > .bf(숫자 원판: 공이 구를 때 이것만 돌아감)
+       ::before = 위에 덮는 유리 광택, ::after = 바닥에 지는 그림자 */
     .balls { display: flex; justify-content: center; align-items: center; gap: 6px; flex-wrap: nowrap; }
     .ball {
       --c: #fbc400; --l: #fff0a0; --d: #a57400;
@@ -362,34 +364,62 @@
       font-variant-numeric: tabular-nums;
       letter-spacing: -0.02em;
       color: #141414;
-      isolation: isolate;
       background:
-        radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.95) 0 7%, rgba(255, 255, 255, 0.3) 14%, transparent 26%),
-        radial-gradient(circle at 40% 35%, var(--l) 0%, var(--c) 42%, var(--d) 100%);
+        radial-gradient(circle at 70% 88%, color-mix(in srgb, var(--l) 55%, transparent) 0%, transparent 34%),
+        radial-gradient(circle at 36% 30%, var(--l) 0%, var(--c) 46%, var(--d) 82%, color-mix(in srgb, var(--d) 70%, #000) 100%);
       box-shadow:
-        inset -4px -6px 10px rgba(0, 0, 0, 0.28),
-        inset 2px 3px 6px rgba(255, 255, 255, 0.4),
-        0 6px 10px -4px rgba(0, 0, 0, 0.7);
+        inset -5px -7px 11px rgba(0, 0, 0, 0.42),
+        inset 3px 4px 7px rgba(255, 255, 255, 0.38),
+        inset 0 0 0 1px rgba(0, 0, 0, 0.18);
       transition: opacity .2s, filter .2s;
     }
-    /* 숫자 뒤 흰 원판: 어떤 색 공에서도 숫자가 또렷하게 */
+    /* 숫자 원판 (공 표면에 인쇄된 흰 동그라미) */
+    .ball .bf {
+      width: 62%;
+      aspect-ratio: 1 / 1;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      line-height: 1;
+      background: radial-gradient(circle at 42% 36%, #ffffff 0%, #f4f4f4 62%, #dcdcdc 100%);
+      box-shadow: inset -1px -2px 3px rgba(0, 0, 0, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.1);
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+    /* 유리 광택: 또렷한 하이라이트 + 넓게 번지는 빛 (숫자 원판 위를 덮음) */
     .ball::before {
       content: "";
       position: absolute;
-      inset: 19%;
-      z-index: -1;
+      inset: 0;
       border-radius: 50%;
-      background: radial-gradient(circle at 40% 35%, #ffffff 0%, #f3f3f3 70%, #e2e2e2 100%);
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), inset 0 -1px 1px rgba(0, 0, 0, 0.08);
+      pointer-events: none;
+      z-index: 1;
+      background:
+        radial-gradient(ellipse 26% 17% at 33% 22%, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.55) 55%, transparent 100%),
+        radial-gradient(ellipse 60% 44% at 36% 24%, rgba(255, 255, 255, 0.34) 0%, transparent 70%),
+        radial-gradient(circle at 50% 50%, transparent 58%, rgba(0, 0, 0, 0.2) 100%);
     }
+    /* 바닥 그림자 */
     .ball::after {
       content: "";
       position: absolute;
-      left: 22%; right: 22%; bottom: 6%;
-      height: 10%;
+      left: 12%; right: 12%; bottom: -11%;
+      height: 16%;
       border-radius: 50%;
-      background: radial-gradient(ellipse, rgba(255, 255, 255, 0.35), transparent 70%);
+      background: radial-gradient(ellipse, rgba(0, 0, 0, 0.6), transparent 70%);
+      z-index: -1;
+      filter: blur(1.5px);
     }
+    .balls, .ball-row, .reel .face { isolation: isolate; }
+    @keyframes bfRoll { 0% { transform: rotate(-540deg); } 70% { transform: rotate(12deg); } 100% { transform: none; } }
+    /* 앞으로 굴러오기: 숫자 원판이 공 표면을 타고 위에서 아래로 넘어옴 */
+    @keyframes bfTumble {
+      0%   { transform: rotateX(-900deg) translateZ(.9em); }
+      100% { transform: rotateX(0deg) translateZ(.9em); }
+    }
+    @keyframes ballDrop { 0% { transform: translateY(-26px) scale(.7); opacity: 0; } 55% { transform: translateY(3px) scale(1.04); opacity: 1; } 75% { transform: translateY(-4px); } 100% { transform: none; opacity: 1; } }
+    .balls.tumble .ball { animation: ballDrop .7s cubic-bezier(.3, .7, .3, 1) both; animation-delay: calc(var(--k, 0) * 90ms); }
+    .balls.tumble .ball .bf { animation: bfTumble 1.1s cubic-bezier(.2, .7, .2, 1) both; animation-delay: calc(var(--k, 0) * 90ms); }
     .c1 { --c: #f5b800; --l: #fff0a0; --d: #a57400; }
     .c2 { --c: #2f9ee0; --l: #b6e6ff; --d: #0f4f7a; }
     .c3 { --c: #f04848; --l: #ffc2c2; --d: #8f1717; }
@@ -412,8 +442,8 @@
       z-index: 2;
     }
     .ball.dim { opacity: .28; filter: saturate(.3); }
-    .ball.hit { box-shadow: 0 0 0 2px var(--win), 0 0 14px 2px rgba(255, 216, 107, 0.55), inset -4px -6px 10px rgba(0, 0, 0, 0.28), inset 2px 3px 6px rgba(255, 255, 255, 0.4); }
-    .ball.bonus-hit { box-shadow: 0 0 0 2px #ff8fa3, 0 0 12px 2px rgba(255, 143, 163, 0.5), inset -4px -6px 10px rgba(0, 0, 0, 0.28); }
+    .ball.hit { box-shadow: 0 0 0 2px var(--win), 0 0 14px 2px rgba(255, 216, 107, 0.55), inset -5px -7px 11px rgba(0, 0, 0, 0.42), inset 3px 4px 7px rgba(255, 255, 255, 0.38); }
+    .ball.bonus-hit { box-shadow: 0 0 0 2px #ff8fa3, 0 0 12px 2px rgba(255, 143, 163, 0.5), inset -5px -7px 11px rgba(0, 0, 0, 0.42), inset 3px 4px 7px rgba(255, 255, 255, 0.38); }
 
     /* ================= 골든 드럼 ================= */
     .machine-wrap { text-align: center; padding: 26px 16px 22px; }
@@ -462,7 +492,13 @@
         radial-gradient(120% 80% at 50% 0%, rgba(255, 90, 60, 0.25), transparent 60%),
         linear-gradient(180deg, #4a0e12 0%, #2a0609 100%);
       border: 3px solid #d18f00;
-      box-shadow: 0 0 0 2px #6e4100, 0 0 28px -4px rgba(240, 160, 0, 0.75), inset 0 2px 10px rgba(255, 200, 80, 0.25);
+      box-shadow:
+        0 0 0 2px #6e4100,
+        0 5px 0 2px #3d2300, 0 9px 0 2px #1d1000,
+        0 18px 26px -6px rgba(0, 0, 0, 0.85),
+        0 0 28px -4px rgba(240, 160, 0, 0.75),
+        inset 0 2px 10px rgba(255, 200, 80, 0.3), inset 0 -10px 18px rgba(0, 0, 0, 0.45), inset 6px 0 10px -6px rgba(255, 180, 120, 0.25), inset -6px 0 10px -6px rgba(0, 0, 0, 0.5);
+      margin-bottom: 12px;
     }
     .bulbs { display: flex; justify-content: space-between; padding: 0 4px; }
     .bulbs i { width: 7px; height: 7px; border-radius: 50%; background: #ffd75e; box-shadow: 0 0 6px #ffb800; animation: blink .9s steps(2, start) infinite; }
@@ -488,33 +524,65 @@
       padding: 8px 6px;
       margin-bottom: 8px;
       border-radius: 14px;
-      background: linear-gradient(180deg, #0b0b10, #1b1b24 50%, #0b0b10);
-      box-shadow: inset 0 0 0 2px #6e4100, inset 0 6px 14px rgba(0, 0, 0, 0.8);
+      background: linear-gradient(180deg, #050507, #17171f 50%, #050507);
+      box-shadow:
+        inset 0 0 0 2px #6e4100, inset 0 8px 16px rgba(0, 0, 0, 0.9), inset 0 -8px 16px rgba(0, 0, 0, 0.9),
+        0 0 0 2px #e0a520, 0 0 0 4px #7a4a00, 0 2px 0 5px rgba(255, 220, 130, 0.25);
     }
-    .pay-arrow { flex: 0 0 auto; width: 0; height: 0; border-top: 7px solid transparent; border-bottom: 7px solid transparent; }
+    /* 유리창 반사 */
+    .slot-window::before {
+      content: ""; position: absolute; inset: 2px; border-radius: 12px; pointer-events: none; z-index: 4;
+      background: linear-gradient(115deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.04) 22%, transparent 34%, transparent 70%, rgba(255, 255, 255, 0.05) 100%);
+    }
+    /* 당첨선 */
+    .slot-window::after {
+      content: ""; position: absolute; left: 14px; right: 14px; top: 50%; height: 2px; margin-top: -1px; pointer-events: none; z-index: 3;
+      background: linear-gradient(90deg, transparent, rgba(255, 60, 60, 0.75) 12%, rgba(255, 60, 60, 0.75) 88%, transparent);
+      box-shadow: 0 0 6px rgba(255, 40, 40, 0.8);
+      opacity: .55;
+    }
+    .slot.win .slot-window::after { opacity: 0; }
+    .pay-arrow { flex: 0 0 auto; width: 0; height: 0; border-top: 7px solid transparent; border-bottom: 7px solid transparent; position: relative; z-index: 5; }
     .pay-arrow.l { border-left: 9px solid #ff4d4d; }
     .pay-arrow.r { border-right: 9px solid #ff4d4d; }
     .slot-reels { flex: 1; min-width: 0; display: flex; gap: 4px; }
+    /* 릴 하나 = 12면 원통(드럼). 원근감을 줘서 위·아래 그림이 뒤로 말려 들어가 보여요 */
     .reel {
       position: relative;
       flex: 1 1 0;
       min-width: 0;
-      height: var(--cell);
+      height: calc(var(--cell) * 2.15);
       overflow: hidden;
       border-radius: 9px;
-      background: linear-gradient(180deg, #b9b9c2 0%, #f4f4f6 30%, #ffffff 50%, #f4f4f6 70%, #b9b9c2 100%);
+      background: #07070a;
     }
+    /* 원근은 안쪽 상자에 (잘라내기와 원근을 같은 상자에 두면 일부 브라우저에서 면이 빠져 보임) */
+    .reel .rview { position: absolute; inset: 0; perspective: 520px; perspective-origin: 50% 50%; }
+    .reel .rdrum {
+      position: absolute; left: 0; right: 0; top: 50%;
+      height: var(--cell); margin-top: calc(var(--cell) / -2);
+      transform-style: preserve-3d; -webkit-transform-style: preserve-3d;
+      transform: translateZ(calc(var(--r, 108px) * -1)) rotateX(0deg);
+      will-change: transform;
+    }
+    .reel .face {
+      position: absolute; inset: 0;   /* 면끼리 겹치면 3D 정렬이 깨져서 정확히 맞닿게 */
+      display: grid; place-items: center;
+      backface-visibility: hidden; -webkit-backface-visibility: hidden;
+      background: linear-gradient(180deg, #e9e9ee 0%, #ffffff 50%, #e9e9ee 100%);
+      box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.08), inset 0 -1px 0 rgba(0, 0, 0, 0.08);
+      transform: rotateX(calc(var(--i) * 30deg)) translateZ(var(--r, 108px));
+    }
+    /* 원통 음영: 위·아래로 갈수록 어두워짐 + 가운데 밝은 띠 */
     .reel::after {
       content: "";
       position: absolute;
       inset: 0;
       pointer-events: none;
-      background: linear-gradient(180deg, rgba(0, 0, 0, 0.45), transparent 28%, transparent 72%, rgba(0, 0, 0, 0.45));
+      z-index: 2;
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.88) 0%, rgba(0, 0, 0, 0.5) 14%, rgba(0, 0, 0, 0.12) 30%, transparent 42%, transparent 58%, rgba(0, 0, 0, 0.12) 70%, rgba(0, 0, 0, 0.5) 86%, rgba(0, 0, 0, 0.88) 100%);
     }
-    .reel .strip { will-change: transform; }
-    .reel .cell { height: var(--cell); display: grid; place-items: center; }
-    .reel .cell .ball { width: 84%; height: auto; max-width: 42px; aspect-ratio: 1 / 1; font-size: clamp(.7rem, 3.6vw, .95rem); }
-    .reel.spinning .strip { filter: blur(.35px); }
+    .reel .face .ball { width: 84%; height: auto; max-width: 42px; aspect-ratio: 1 / 1; font-size: clamp(.7rem, 3.6vw, .95rem); }
     .reel .sym { display: grid; place-items: center; width: 86%; max-width: 44px; aspect-ratio: 1 / 1; line-height: 1; user-select: none; }
     .reel .sym.fruit { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; font-size: clamp(1.25rem, 6.4vw, 1.7rem); filter: drop-shadow(0 2px 1px rgba(0, 0, 0, .35)); }
     .reel .sym7 {
@@ -526,9 +594,9 @@
     }
     .reel .symbar i {
       font-style: normal; font-family: var(--f-num); font-weight: 900;
-      font-size: clamp(.55rem, 2.9vw, .78rem); letter-spacing: .04em;
+      font-size: clamp(.5rem, 2.5vw, .7rem); letter-spacing: 0; white-space: nowrap;
       color: #fff; background: #141414; border: 2px solid #ffd75e; border-radius: 4px;
-      padding: 2px 4px; box-shadow: 0 2px 3px rgba(0, 0, 0, .45);
+      padding: 2px 3px; box-shadow: 0 2px 3px rgba(0, 0, 0, .45);
     }
     .slot-title { display: flex; align-items: center; justify-content: center; gap: 4px; }
     .slot-title span { padding: 0 4px; }
@@ -545,8 +613,9 @@
     .slot-title .t7:nth-of-type(3) { animation-delay: .4s; }
     @keyframes t7 { 50% { box-shadow: 0 0 16px rgba(255, 184, 0, 1); transform: translateY(-1px); } }
     .lever { position: absolute; right: -11px; top: 30%; width: 8px; height: 40%; pointer-events: none; }
+    .lever::after { content: ""; position: absolute; left: -3px; right: -3px; bottom: -6px; height: 12px; border-radius: 4px; background: linear-gradient(180deg, #f1c24a, #8a5a00); box-shadow: 0 2px 3px rgba(0, 0, 0, .6), inset 0 1px 0 rgba(255, 255, 255, .5); }
     .lever::before { content: ""; position: absolute; left: 1px; right: 1px; top: 0; bottom: 0; border-radius: 4px; background: linear-gradient(90deg, #8c8c96, #f1f1f4 45%, #8c8c96); transform-origin: 50% 100%; }
-    .lever i { position: absolute; left: 50%; top: -10px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ff9d9d, #e0141c 55%, #7a0006); box-shadow: 0 2px 4px rgba(0, 0, 0, .5); }
+    .lever i { position: absolute; left: 50%; top: -10px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; background: radial-gradient(circle at 34% 28%, #fff 0 8%, #ff9d9d 20%, #e0141c 58%, #6a0005 100%); box-shadow: 0 3px 5px rgba(0, 0, 0, .6), inset -2px -3px 4px rgba(0, 0, 0, .35); }
     .lever.pull::before { animation: leverStick .6s ease-in-out; }
     .lever.pull i { animation: leverKnob .6s ease-in-out; }
     @keyframes leverStick { 40% { transform: scaleY(.3); } }
@@ -617,9 +686,10 @@
       font-size: clamp(.82rem, 4.2vw, 1rem);
     }
     .game.new .ball { animation: rollIn .7s cubic-bezier(.2, .9, .3, 1.15) both; }
+    .game.new .ball .bf { animation: bfRoll .7s cubic-bezier(.2, .9, .3, 1.15) both; animation-delay: inherit; }
     @keyframes rollIn {
-      0%   { transform: translateX(-70px) rotate(-540deg) scale(.4); opacity: 0; }
-      70%  { transform: translateX(3px) rotate(12deg) scale(1.06); opacity: 1; }
+      0%   { transform: translateX(-70px) scale(.4); opacity: 0; }
+      70%  { transform: translateX(3px) scale(1.06); opacity: 1; }
       100% { transform: none; opacity: 1; }
     }
     .game-meta { margin-top: 5px; font-size: .74rem; color: var(--sub); text-align: right; }
@@ -802,6 +872,7 @@
     .badge.two i { font-style: normal; font-family: var(--f-body, inherit); font-weight: 600; font-size: .6rem; opacity: .85; white-space: nowrap; }
     .tguide { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: .74rem; color: var(--sub); margin: 0 2px 10px; line-height: 1.45; }
     .tguide span { display: inline-flex; align-items: center; gap: 5px; }
+    .tguide .ball.sw::before, .tguide .ball.sw::after { display: none; }
     .tguide .ball.sw { width: 14px; height: 14px; min-width: 14px; font-size: 0; display: inline-block; border-radius: 50%; background: #cfd3dc; }
 
     .empty { text-align: center; padding: 26px 10px; }
@@ -1443,6 +1514,7 @@
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
     footer p { margin: 0 0 6px; }
+    footer .ver { font-size: .56rem; color: var(--mute); opacity: .45; letter-spacing: .08em; }
     footer .fine { font-size: .66rem; line-height: 1.55; color: var(--mute); opacity: .85; max-width: 420px; margin: 6px auto 8px; }
     .info-link { border: none; background: none; color: var(--gold); font-size: .74rem; padding: 8px 10px; min-height: 36px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
     .info-body { font-size: .86rem; color: var(--sub); line-height: 1.6; padding: 0 2px 8px; }
@@ -1759,6 +1831,7 @@
     <p>모든 번호의 당첨 확률은 같아요 · 재미로 즐겨주세요 🍀</p>
     <p class="fine">이 앱은 동행복권·복권위원회와 관련 없는 개인이 만든 앱이며, 복권을 팔거나 구매를 대행하지 않아요. 당첨 여부는 동행복권 공식 발표로 꼭 확인하세요. 복권은 만 19세 이상만 구매할 수 있어요 · 도박 문제 상담 ☎ 1336</p>
     <button type="button" class="info-link" id="infoBtn">앱 정보 · 개인정보처리방침</button>
+    <div class="ver" aria-hidden="true">v42</div>
   </footer>
 
   <div class="sheet" id="infoSheet" hidden role="dialog" aria-modal="true" aria-labelledby="infoTitle">
@@ -2023,7 +2096,10 @@
       function ballEl(n, extra = '') {
         const b = document.createElement('div');
         b.className = `ball ${colorClass(n)} ${extra}`.trim();
-        b.textContent = n;
+        const f = document.createElement('span');
+        f.className = 'bf';
+        f.textContent = n;
+        b.appendChild(f);
         return b;
       }
       function escapeHtml(s) {
@@ -2103,12 +2179,15 @@
         $('finalWhen').innerHTML = `<b>${d.round}회</b> · ${fmtDate(d.round)} 추첨`;
         const box = $('finalBalls');
         box.innerHTML = '';
-        d.numbers.forEach(n => box.appendChild(ballEl(n)));
+        // 회차가 처음 보일 때만 공이 굴러 떨어지는 연출
+        box.classList.toggle('tumble', !reduceMotion && renderFinal._shown !== d.round);
+        renderFinal._shown = d.round;
+        d.numbers.forEach((n, k) => { const b = ballEl(n); b.style.setProperty('--k', k); box.appendChild(b); });
         const plus = document.createElement('span');
         plus.className = 'plus';
         plus.textContent = '+';
         box.appendChild(plus);
-        box.appendChild(ballEl(d.bonus));
+        const bb = ballEl(d.bonus); bb.style.setProperty('--k', 7); box.appendChild(bb);
         card.hidden = false;
       }
 
@@ -2335,20 +2414,27 @@
           const stops = target.map((_, i) => base + i * step + (i === target.length - 1 ? suspense : 0));
           const total = stops[stops.length - 1];
 
+          const FACES = 12, STEP = 360 / FACES;
           const reels = target.map((n, i) => {
             const reel = document.createElement('div');
             reel.className = 'reel spinning';
-            const strip = document.createElement('div');
-            strip.className = 'strip';
-            const count = 8 + i * 2 + (i === target.length - 1 ? 3 : 0);   // 그림 수를 줄여 과일이 보이는 속도로
-            for (let k = 0; k < count; k++) {
-              const cell = document.createElement('div');
-              cell.className = 'cell';
-              cell.appendChild(slotSymbol(k === count - 1 ? '7' : null));   // 멈추기 직전엔 7이 스쳐 지나가게
-              strip.appendChild(cell);
+            const drum = document.createElement('div');
+            drum.className = 'rdrum';
+            const faces = [];
+            for (let k = 0; k < FACES; k++) {
+              const face = document.createElement('div');
+              face.className = 'face';
+              face.style.setProperty('--i', k);
+              face.appendChild(slotSymbol(k === FACES - 1 ? '7' : null));   // 멈추기 직전엔 7이 지나가게
+              drum.appendChild(face);
+              faces.push(face);
             }
-            const last = document.createElement('div');
-            last.className = 'cell';
+            const view = document.createElement('div');
+            view.className = 'rview';
+            view.appendChild(drum);
+            reel.appendChild(view);
+            reelsEl.appendChild(reel);
+            // 0번 면에 번호 공을 붙임 (드럼 뒤쪽으로 넘어가 안 보일 때 바꿔 끼움)
             const ball = ballEl(n);
             if (mine.has(n)) {
               const st = document.createElement('span');
@@ -2356,28 +2442,30 @@
               st.textContent = '★';
               ball.appendChild(st);
             }
-            last.appendChild(ball);
-            strip.appendChild(last);
-            reel.appendChild(strip);
-            reelsEl.appendChild(reel);
-            return { reel, strip, count };
+            const count = 8 + i * 2 + (i === target.length - 1 ? 3 : 0);   // 지나가는 그림 수 (과일이 보이는 속도)
+            return { reel, drum, face0: faces[0], ball, count, swapped: false, anim: null, start: count * STEP };
           });
+          const putBall = (x) => { if (!x.swapped) { x.swapped = true; x.face0.innerHTML = ''; x.face0.appendChild(x.ball); } };
 
           slot.classList.add('shake');   // 레버 당긴 느낌
           const lever = slot.querySelector('.lever');
           if (lever) { lever.classList.remove('pull'); void lever.offsetWidth; lever.classList.add('pull'); }
           requestAnimationFrame(() => {
-            const cellH = reels[0].reel.getBoundingClientRect().height || 58;
-            reels.forEach(({ reel, strip, count }, i) => {
-              const end = -count * cellH;
-              const anim = strip.animate([
-                { transform: 'translateY(0)' },
-                { transform: `translateY(${end - cellH * 0.18}px)`, offset: 0.93 },
-                { transform: `translateY(${end}px)` }
+            const cellH = reels[0].drum.offsetHeight || 58;
+            const radius = Math.floor(cellH / 2 / Math.tan(Math.PI / FACES) * 10) / 10 - 0.2;   // 살짝 작게: 면 사이 실금 방지
+            reelsEl.style.setProperty('--r', radius + 'px');
+            const tf = (deg) => `translateZ(${-radius}px) rotateX(${deg}deg)`;
+            const OVER = -STEP * 0.18;
+            reels.forEach((x, i) => {
+              x.anim = x.drum.animate([
+                { transform: tf(x.start) },
+                { transform: tf(OVER), offset: 0.93 },
+                { transform: tf(0) }
               ], { duration: stops[i], easing: 'cubic-bezier(.3,.15,.3,1)', fill: 'forwards' });
-              anim.onfinish = () => {
-                reel.classList.remove('spinning');
-                reel.classList.add('stopped');
+              x.anim.onfinish = () => {
+                putBall(x);
+                x.reel.classList.remove('spinning');
+                x.reel.classList.add('stopped');
                 buzz(i === target.length - 1 ? 60 : 15);
               };
               // 마지막 릴만 남으면 긴장감
@@ -2385,6 +2473,20 @@
                 setTimeout(() => { text.innerHTML = '마지막 하나<span class="dots"></span>'; }, stops[i]);
               }
             });
+            // 남은 회전이 반 바퀴쯤일 때(0번 면이 드럼 뒤에 있을 때) 번호 공으로 바꿔 끼움
+            const watch = () => {
+              let left = 0;
+              reels.forEach((x) => {
+                if (x.swapped) return;
+                let p = null;
+                try { p = x.anim.effect.getComputedTiming().progress; } catch (e) {}
+                if (p == null) { putBall(x); return; }
+                const ang = p < 0.93 ? x.start + (OVER - x.start) * (p / 0.93) : OVER * (1 - (p - 0.93) / 0.07);
+                if (ang <= 205) putBall(x); else left++;
+              });
+              if (left) requestAnimationFrame(watch);
+            };
+            requestAnimationFrame(watch);
           });
 
           sfx.whenReady(() => {
